@@ -532,6 +532,34 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "human", "assays", "functional"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_assays_adme_human",
+        name="ChEMBL Human ADME Assays",
+        description=(
+            "ADME-type ChEMBL assays linked to human targets, useful for "
+            "pharmacokinetic assay landscape analysis."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="assays",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/assay.json",
+            params={
+                "assay_type": "A",
+                "target_organism": "Homo sapiens",
+            },
+            pagination="chembl",
+            items_path="assays",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=12_000,
+        ),
+        tags=("api", "chembl", "human", "assays", "adme"),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_targets_human_single_protein",
         name="ChEMBL Human Single-Protein Targets",
         description=(
@@ -558,6 +586,34 @@ _DEFAULT_DATASETS = [
             max_rows=8_000,
         ),
         tags=("api", "chembl", "human", "targets"),
+    ),
+    DatasetDefinition(
+        dataset_id="chembl_targets_human_protein_complex",
+        name="ChEMBL Human Protein Complex Targets",
+        description=(
+            "ChEMBL target records restricted to human protein complexes for "
+            "multi-subunit target-space definition."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="targets",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/target.json",
+            params={
+                "target_type": "PROTEIN COMPLEX",
+                "organism": "Homo sapiens",
+            },
+            pagination="chembl",
+            items_path="targets",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=10,
+            max_rows=8_000,
+        ),
+        tags=("api", "chembl", "human", "targets", "protein_complex"),
     ),
     DatasetDefinition(
         dataset_id="chembl_molecules_phase3plus",
@@ -739,6 +795,34 @@ _DEFAULT_DATASETS = [
             max_rows=8_000,
         ),
         tags=("api", "uniprot", "human", "receptors", "target_family"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_membrane",
+        name="UniProt Human Membrane Proteins",
+        description=(
+            "Reviewed human proteins annotated with membrane localization for "
+            "membrane-target enrichment workflows."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Membrane",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "membrane", "target_family"),
     ),
     DatasetDefinition(
         dataset_id="uniprot_human_kinases",
