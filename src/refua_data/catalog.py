@@ -557,6 +557,31 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "clinical", "phase3plus"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_molecules_black_box_warning",
+        name="ChEMBL Molecules with Black Box Warning",
+        description=(
+            "ChEMBL molecules flagged with FDA boxed warning metadata for "
+            "safety-aware filtering and risk modeling."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="safety",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/molecule.json",
+            params={"black_box_warning": "1"},
+            pagination="chembl",
+            items_path="molecules",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=20_000,
+        ),
+        tags=("api", "chembl", "molecules", "safety", "black_box_warning"),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_mechanism_phase2plus",
         name="ChEMBL Mechanisms Phase 2+",
         description=(
@@ -776,6 +801,62 @@ _DEFAULT_DATASETS = [
             max_rows=8_000,
         ),
         tags=("api", "uniprot", "human", "secreted", "target_family"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_transcription_factors",
+        name="UniProt Human Transcription-Related Proteins",
+        description=(
+            "Reviewed human proteins annotated with transcription-related "
+            "keywords for transcriptional program target discovery."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Transcription",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "transcription", "target_family"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_enzymes",
+        name="UniProt Human Enzymes",
+        description=(
+            "Reviewed human proteins annotated as enzymes for enzyme-focused "
+            "target family benchmarking."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Enzyme",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "enzymes", "target_family"),
     ),
 ]
 

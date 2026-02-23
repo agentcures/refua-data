@@ -42,14 +42,17 @@ The default catalog includes local-file/HTTP datasets plus API presets useful in
 22. `chembl_assays_binding_human`
 23. `chembl_targets_human_single_protein`
 24. `chembl_molecules_phase3plus`
-25. `chembl_mechanism_phase2plus`
-26. `chembl_drug_indications_phase2plus`
-27. `uniprot_human_reviewed`
-28. `uniprot_human_kinases`
-29. `uniprot_human_gpcr`
-30. `uniprot_human_ion_channels`
-31. `uniprot_human_transporters`
-32. `uniprot_human_secreted`
+25. `chembl_molecules_black_box_warning`
+26. `chembl_mechanism_phase2plus`
+27. `chembl_drug_indications_phase2plus`
+28. `uniprot_human_reviewed`
+29. `uniprot_human_kinases`
+30. `uniprot_human_gpcr`
+31. `uniprot_human_ion_channels`
+32. `uniprot_human_transporters`
+33. `uniprot_human_secreted`
+34. `uniprot_human_transcription_factors`
+35. `uniprot_human_enzymes`
 
 Most of these are distributed through MoleculeNet/DeepChem mirrors and retain upstream licensing terms.
 ChEMBL and UniProt presets are fetched through their public REST APIs and cached locally as JSONL.
