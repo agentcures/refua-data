@@ -476,6 +476,35 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "human", "ec50", "potency"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_activity_ac50_human",
+        name="ChEMBL Human AC50 Activities",
+        description=(
+            "ChEMBL activity records for human targets with AC50 and pChEMBL "
+            "values, useful for concentration-response modeling."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="target_activity",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/activity.json",
+            params={
+                "target_organism": "Homo sapiens",
+                "standard_type": "AC50",
+                "pchembl_value__isnull": "false",
+            },
+            pagination="chembl",
+            items_path="activities",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=40,
+            max_rows=25_000,
+        ),
+        tags=("api", "chembl", "human", "ac50", "potency"),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_assays_binding_human",
         name="ChEMBL Human Binding Assays",
         description=(
@@ -639,6 +668,31 @@ _DEFAULT_DATASETS = [
             max_rows=20_000,
         ),
         tags=("api", "chembl", "clinical", "phase3plus"),
+    ),
+    DatasetDefinition(
+        dataset_id="chembl_molecules_phase4",
+        name="ChEMBL Molecules Phase 4",
+        description=(
+            "ChEMBL molecules with max clinical phase >= 4, useful for "
+            "marketed-drug priors and late-stage benchmark sets."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="compound_library",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/molecule.json",
+            params={"max_phase__gte": "4"},
+            pagination="chembl",
+            items_path="molecules",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=30,
+            max_rows=20_000,
+        ),
+        tags=("api", "chembl", "clinical", "phase4"),
     ),
     DatasetDefinition(
         dataset_id="chembl_molecules_black_box_warning",
@@ -823,6 +877,34 @@ _DEFAULT_DATASETS = [
             max_rows=8_000,
         ),
         tags=("api", "uniprot", "human", "membrane", "target_family"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_nucleus",
+        name="UniProt Human Nuclear Proteins",
+        description=(
+            "Reviewed human proteins annotated with nuclear localization for "
+            "nucleus-focused target enrichment and biology workflows."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Nucleus",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "nucleus", "target_family"),
     ),
     DatasetDefinition(
         dataset_id="uniprot_human_kinases",
