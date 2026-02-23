@@ -504,6 +504,34 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "human", "assays", "binding"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_assays_functional_human",
+        name="ChEMBL Human Functional Assays",
+        description=(
+            "Functional-type ChEMBL assays for human targets, useful for "
+            "phenotypic and pathway-relevant assay context."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="assays",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/assay.json",
+            params={
+                "assay_type": "F",
+                "target_organism": "Homo sapiens",
+            },
+            pagination="chembl",
+            items_path="assays",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=12_000,
+        ),
+        tags=("api", "chembl", "human", "assays", "functional"),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_targets_human_single_protein",
         name="ChEMBL Human Single-Protein Targets",
         description=(
@@ -632,6 +660,31 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "indications", "clinical", "phase2plus"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_drug_indications_phase3plus",
+        name="ChEMBL Drug Indications Phase 3+",
+        description=(
+            "ChEMBL drug indication records for compounds with indication max phase >= 3, "
+            "useful for late-stage translational and disease-area annotation."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="targets",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/drug_indication.json",
+            params={"max_phase_for_ind__gte": "3"},
+            pagination="chembl",
+            items_path="drug_indications",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=20_000,
+        ),
+        tags=("api", "chembl", "indications", "clinical", "phase3plus"),
+    ),
+    DatasetDefinition(
         dataset_id="uniprot_human_reviewed",
         name="UniProt Human Reviewed Proteome",
         description=(
@@ -658,6 +711,34 @@ _DEFAULT_DATASETS = [
             max_rows=20_000,
         ),
         tags=("api", "uniprot", "human", "reviewed", "targets"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_receptors",
+        name="UniProt Human Receptors",
+        description=(
+            "Reviewed human proteins annotated as receptors for receptor-family "
+            "mapping beyond GPCR-focused subsets."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Receptor",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "receptors", "target_family"),
     ),
     DatasetDefinition(
         dataset_id="uniprot_human_kinases",
