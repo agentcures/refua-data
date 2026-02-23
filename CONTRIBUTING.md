@@ -21,5 +21,5 @@ python -m twine check dist/*
 ## Pull requests
 
 - Keep changes focused and include tests for behavior changes.
-- Update `README.md` and `CHANGELOG.md` when user-visible behavior changes.
+- Update `README.md` when user-visible behavior changes.
 - Ensure CI passes before requesting review.
