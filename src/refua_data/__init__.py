@@ -1,8 +1,8 @@
 """refua-data package API."""
 
+import tomllib
 from importlib.metadata import version as _distribution_version
 from pathlib import Path
-import tomllib
 
 from .cache import CacheBackend, DataCache
 from .catalog import DatasetCatalog, get_default_catalog
