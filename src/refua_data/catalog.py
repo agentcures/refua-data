@@ -418,6 +418,64 @@ _DEFAULT_DATASETS = [
         tags=("api", "chembl", "human", "ic50", "potency"),
     ),
     DatasetDefinition(
+        dataset_id="chembl_activity_kd_human",
+        name="ChEMBL Human Kd Activities",
+        description=(
+            "ChEMBL activity records for human targets with Kd and pChEMBL "
+            "values, useful for affinity modeling."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="target_activity",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/activity.json",
+            params={
+                "target_organism": "Homo sapiens",
+                "standard_type": "Kd",
+                "pchembl_value__isnull": "false",
+            },
+            pagination="chembl",
+            items_path="activities",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=40,
+            max_rows=25_000,
+        ),
+        tags=("api", "chembl", "human", "kd", "affinity"),
+    ),
+    DatasetDefinition(
+        dataset_id="chembl_activity_ec50_human",
+        name="ChEMBL Human EC50 Activities",
+        description=(
+            "ChEMBL activity records for human targets with EC50 and pChEMBL "
+            "values, useful for functional potency modeling."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="target_activity",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/activity.json",
+            params={
+                "target_organism": "Homo sapiens",
+                "standard_type": "EC50",
+                "pchembl_value__isnull": "false",
+            },
+            pagination="chembl",
+            items_path="activities",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=40,
+            max_rows=25_000,
+        ),
+        tags=("api", "chembl", "human", "ec50", "potency"),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_assays_binding_human",
         name="ChEMBL Human Binding Assays",
         description=(
@@ -497,6 +555,56 @@ _DEFAULT_DATASETS = [
             max_rows=20_000,
         ),
         tags=("api", "chembl", "clinical", "phase3plus"),
+    ),
+    DatasetDefinition(
+        dataset_id="chembl_mechanism_phase2plus",
+        name="ChEMBL Mechanisms Phase 2+",
+        description=(
+            "ChEMBL mechanism-of-action records for compounds with max phase >= 2, "
+            "useful for target-mechanism mapping."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="targets",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/mechanism.json",
+            params={"max_phase__gte": "2"},
+            pagination="chembl",
+            items_path="mechanisms",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=20_000,
+        ),
+        tags=("api", "chembl", "mechanism_of_action", "clinical", "phase2plus"),
+    ),
+    DatasetDefinition(
+        dataset_id="chembl_drug_indications_phase2plus",
+        name="ChEMBL Drug Indications Phase 2+",
+        description=(
+            "ChEMBL drug indication records for compounds with indication max phase >= 2, "
+            "useful for translational and disease-area annotation."
+        ),
+        source="ChEMBL REST API",
+        homepage="https://www.ebi.ac.uk/chembl/",
+        license_name="ChEMBL data terms",
+        license_url="https://www.ebi.ac.uk/chembl/ws",
+        file_format="jsonl",
+        category="targets",
+        api=ApiDatasetConfig(
+            endpoint="https://www.ebi.ac.uk/chembl/api/data/drug_indication.json",
+            params={"max_phase_for_ind__gte": "2"},
+            pagination="chembl",
+            items_path="drug_indications",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=20,
+            max_rows=20_000,
+        ),
+        tags=("api", "chembl", "indications", "clinical", "phase2plus"),
     ),
     DatasetDefinition(
         dataset_id="uniprot_human_reviewed",
@@ -640,6 +748,34 @@ _DEFAULT_DATASETS = [
             max_rows=8_000,
         ),
         tags=("api", "uniprot", "human", "transporters", "target_family"),
+    ),
+    DatasetDefinition(
+        dataset_id="uniprot_human_secreted",
+        name="UniProt Human Secreted Proteins",
+        description=(
+            "Reviewed human secreted proteins for extracellular target discovery "
+            "and biologics-oriented programs."
+        ),
+        source="UniProt REST API",
+        homepage="https://www.uniprot.org/help/api_queries",
+        license_name="UniProt terms",
+        license_url="https://www.uniprot.org/help/license",
+        file_format="jsonl",
+        category="target_families",
+        api=ApiDatasetConfig(
+            endpoint="https://rest.uniprot.org/uniprotkb/search",
+            params={
+                "query": "organism_id:9606 AND reviewed:true AND keyword:Secreted",
+                "format": "json",
+            },
+            pagination="link_header",
+            items_path="results",
+            page_size_param="size",
+            page_size=500,
+            max_pages=20,
+            max_rows=8_000,
+        ),
+        tags=("api", "uniprot", "human", "secreted", "target_family"),
     ),
 ]
 

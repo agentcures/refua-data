@@ -9,5 +9,10 @@ def test_default_catalog_contains_core_and_api_datasets() -> None:
     assert "zinc15_250k" in ids
     assert "zinc15_tranche_druglike_wait_ok" in ids
     assert "chembl_activity_ki_human" in ids
+    assert "chembl_activity_kd_human" in ids
+    assert "chembl_activity_ec50_human" in ids
+    assert "chembl_mechanism_phase2plus" in ids
+    assert "chembl_drug_indications_phase2plus" in ids
     assert "uniprot_human_reviewed" in ids
-    assert len(datasets) >= 25
+    assert "uniprot_human_secreted" in ids
+    assert len(datasets) >= 30
