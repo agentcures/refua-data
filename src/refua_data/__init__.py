@@ -3,12 +3,20 @@
 import tomllib
 from importlib.metadata import version as _distribution_version
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from .cache import CacheBackend, DataCache
 from .catalog import DatasetCatalog, get_default_catalog
 from .models import ApiDatasetConfig, DatasetDefinition, FetchResult, MaterializeResult
-from .pipeline import DatasetManager
-from .validation import SourceValidationResult
+from .provenance import (
+    build_data_provenance_record,
+    load_materialized_manifest,
+    summarize_materialized_dataset,
+)
+
+if TYPE_CHECKING:
+    from .pipeline import DatasetManager as DatasetManager
+    from .validation import SourceValidationResult as SourceValidationResult
 
 
 def _read_version_from_pyproject() -> str | None:
@@ -43,6 +51,21 @@ __all__ = [
     "FetchResult",
     "MaterializeResult",
     "SourceValidationResult",
+    "build_data_provenance_record",
+    "load_materialized_manifest",
+    "summarize_materialized_dataset",
     "__version__",
     "get_default_catalog",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name == "DatasetManager":
+        from .pipeline import DatasetManager as _DatasetManager
+
+        return _DatasetManager
+    if name == "SourceValidationResult":
+        from .validation import SourceValidationResult as _SourceValidationResult
+
+        return _SourceValidationResult
+    raise AttributeError(f"module 'refua_data' has no attribute '{name}'")
