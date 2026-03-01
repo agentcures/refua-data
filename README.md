@@ -11,6 +11,7 @@
 - HTTP conditional refresh support (`ETag` / `Last-Modified`) when enabled.
 - Incremental parquet materialization (chunked processing + partitioned parquet parts).
 - CLI for listing, fetching, and materializing datasets.
+- Query interface for filtered row access from materialized parquet datasets.
 - Source health checks via `validate-sources` for CI and environment diagnostics.
 - Rich dataset metadata snapshots (description + usage notes) persisted in cache metadata.
 
@@ -121,6 +122,12 @@ Materialize parquet:
 
 ```bash
 refua-data materialize zinc15_250k
+```
+
+Query materialized parquet rows:
+
+```bash
+refua-data query zinc15_250k --columns smiles,logP --filters '{"logP":{"lt":2.5}}' --limit 50
 ```
 
 Refresh against remote metadata:

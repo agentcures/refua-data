@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from .cache import DataCache
 from .pipeline import DatasetManager
@@ -85,6 +87,59 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=100_000,
         help="Rows per chunk for parquet writing",
+    )
+
+    query_parser = subparsers.add_parser(
+        "query",
+        help="Query rows from materialized parquet",
+    )
+    query_parser.add_argument("dataset_id", help="Dataset ID")
+    query_parser.add_argument(
+        "--columns",
+        default=None,
+        help="Comma-separated columns to project (default: all)",
+    )
+    query_parser.add_argument(
+        "--filters",
+        default=None,
+        help=(
+            "JSON object filters (for example "
+            '\'{"label":{"eq":1},"split":["train","valid"]}\')'
+        ),
+    )
+    query_parser.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum rows to return (1-5000)",
+    )
+    query_parser.add_argument(
+        "--materialize-if-missing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Materialize parquet if missing (default: true)",
+    )
+    query_parser.add_argument(
+        "--force-materialize",
+        action="store_true",
+        help="Force re-materialization when materializing for query",
+    )
+    query_parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Refresh raw source metadata/content when materializing",
+    )
+    query_parser.add_argument(
+        "--chunksize",
+        type=int,
+        default=100_000,
+        help="Rows per chunk for parquet writing during materialization",
+    )
+    query_parser.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=120.0,
+        help="Download/materialization timeout in seconds",
     )
 
     validate_parser = subparsers.add_parser(
@@ -250,6 +305,203 @@ def _run_materialize_all(
     return 0
 
 
+def _parse_query_columns(raw_columns: str | None) -> list[str] | None:
+    if raw_columns is None:
+        return None
+    seen: set[str] = set()
+    columns: list[str] = []
+    for raw_value in raw_columns.split(","):
+        column = raw_value.strip()
+        if not column or column in seen:
+            continue
+        seen.add(column)
+        columns.append(column)
+    if not columns:
+        raise ValueError("columns must contain at least one non-empty name.")
+    return columns
+
+
+def _parse_query_filters(raw_filters: str | None) -> dict[str, Any]:
+    if raw_filters is None or not raw_filters.strip():
+        return {}
+    try:
+        parsed = json.loads(raw_filters)
+    except json.JSONDecodeError as exc:
+        raise ValueError("filters must be a valid JSON object.") from exc
+    if not isinstance(parsed, Mapping):
+        raise ValueError("filters must be a JSON object.")
+    return {str(key): value for key, value in parsed.items()}
+
+
+def _apply_query_filters(frame: Any, filters: Mapping[str, Any]) -> Any:
+    if not filters:
+        return frame
+
+    filtered = frame
+    for column, condition in filters.items():
+        if column not in filtered.columns:
+            raise ValueError(f"Unknown filter column '{column}'.")
+        series = filtered[column]
+
+        if isinstance(condition, Mapping):
+            for op, raw_value in condition.items():
+                op_name = str(op).strip().lower()
+                if op_name == "eq":
+                    filtered = filtered[series == raw_value]
+                elif op_name == "ne":
+                    filtered = filtered[series != raw_value]
+                elif op_name == "gt":
+                    filtered = filtered[series > raw_value]
+                elif op_name in {"gte", "ge"}:
+                    filtered = filtered[series >= raw_value]
+                elif op_name == "lt":
+                    filtered = filtered[series < raw_value]
+                elif op_name in {"lte", "le"}:
+                    filtered = filtered[series <= raw_value]
+                elif op_name == "in":
+                    if not isinstance(raw_value, (list, tuple, set)):
+                        raise ValueError(f"filters.{column}.in must be an array value.")
+                    filtered = filtered[series.isin(list(raw_value))]
+                elif op_name == "contains":
+                    pattern = str(raw_value)
+                    filtered = filtered[
+                        series.astype(str).str.contains(
+                            pattern,
+                            case=False,
+                            na=False,
+                            regex=False,
+                        )
+                    ]
+                else:
+                    raise ValueError(
+                        f"Unsupported filter operation '{op_name}' for column '{column}'."
+                    )
+                series = filtered[column]
+            continue
+
+        if isinstance(condition, (list, tuple, set)):
+            filtered = filtered[series.isin(list(condition))]
+        else:
+            filtered = filtered[series == condition]
+
+    return filtered
+
+
+def _run_query(
+    manager: DatasetManager,
+    *,
+    dataset_id: str,
+    columns: str | None,
+    filters: str | None,
+    limit: int,
+    materialize_if_missing: bool,
+    force_materialize: bool,
+    refresh: bool,
+    chunksize: int,
+    timeout_seconds: float,
+) -> int:
+    if limit < 1:
+        raise ValueError("limit must be >= 1.")
+    if limit > 5000:
+        raise ValueError("limit must be <= 5000.")
+    if chunksize < 1:
+        raise ValueError("chunksize must be >= 1.")
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be > 0.")
+
+    dataset_key = str(dataset_id).strip()
+    if not dataset_key:
+        raise ValueError("dataset_id is required.")
+
+    query_columns = _parse_query_columns(columns)
+    query_filters = _parse_query_filters(filters)
+
+    manifest: dict[str, Any] = {}
+    manifest_path_text: str | None = None
+    if materialize_if_missing:
+        materialized = manager.materialize(
+            dataset_key,
+            force=force_materialize,
+            refresh=refresh,
+            chunksize=chunksize,
+            timeout_seconds=timeout_seconds,
+        )
+        parts = list(materialized.parts)
+        manifest_path_text = str(materialized.manifest_path)
+        manifest_raw = manager.cache.read_json(materialized.manifest_path)
+        if isinstance(manifest_raw, dict):
+            manifest = dict(manifest_raw)
+        dataset_meta = manager.catalog.get(dataset_key).metadata_snapshot()
+    else:
+        dataset = manager.catalog.get(dataset_key)
+        dataset_meta = dataset.metadata_snapshot()
+        parquet_dir = manager.cache.parquet_dir(dataset)
+        manifest_path = manager.cache.parquet_manifest(dataset)
+        manifest_raw = manager.cache.read_json(manifest_path)
+        if not isinstance(manifest_raw, dict):
+            raise ValueError(
+                f"Dataset '{dataset_key}' has no parquet manifest. Set materialize_if_missing=true."
+            )
+        manifest_path_text = str(manifest_path)
+        manifest = dict(manifest_raw)
+        parts_raw = manifest.get("parts")
+        if not isinstance(parts_raw, list) or not parts_raw:
+            raise ValueError(f"Dataset '{dataset_key}' parquet manifest has no parts.")
+        parts = [parquet_dir.joinpath(str(name)) for name in parts_raw]
+        if not all(path.exists() for path in parts):
+            raise ValueError(
+                "Dataset "
+                f"'{dataset_key}' parquet parts are missing. "
+                "Re-materialize with force_materialize=true."
+            )
+
+    import pandas as pd
+
+    rows: list[dict[str, Any]] = []
+    scanned_rows = 0
+    scanned_parts = 0
+    for part in parts:
+        frame = pd.read_parquet(part, columns=query_columns)
+        scanned_parts += 1
+        scanned_rows += int(len(frame))
+
+        filtered = _apply_query_filters(frame, query_filters)
+        if filtered.empty:
+            continue
+        if len(rows) >= limit:
+            break
+        remaining = int(limit) - len(rows)
+        batch = filtered.head(remaining)
+        rows.extend(batch.to_dict(orient="records"))
+        if len(rows) >= limit:
+            break
+
+    row_count_estimate = manifest.get("row_count")
+    row_count: int | None = None
+    if isinstance(row_count_estimate, int | float | str):
+        try:
+            row_count = int(row_count_estimate)
+        except (TypeError, ValueError):
+            row_count = None
+
+    payload = {
+        "dataset_id": dataset_key,
+        "columns": query_columns,
+        "filters": query_filters,
+        "limit": int(limit),
+        "returned_rows": len(rows),
+        "scanned_rows": scanned_rows,
+        "scanned_parts": scanned_parts,
+        "row_count_estimate": row_count,
+        "rows": rows,
+        "dataset": dataset_meta,
+        "cache_root": str(manager.cache.root),
+        "manifest_path": manifest_path_text,
+    }
+    print(json.dumps(payload, indent=2))  # noqa: T201
+    return 0
+
+
 def _run_validate_sources(
     manager: DatasetManager,
     *,
@@ -341,6 +593,19 @@ def main() -> int:
             force=args.force,
             refresh=args.refresh,
             chunksize=args.chunksize,
+        )
+    if args.command == "query":
+        return _run_query(
+            manager,
+            dataset_id=args.dataset_id,
+            columns=args.columns,
+            filters=args.filters,
+            limit=args.limit,
+            materialize_if_missing=args.materialize_if_missing,
+            force_materialize=args.force_materialize,
+            refresh=args.refresh,
+            chunksize=args.chunksize,
+            timeout_seconds=args.timeout_seconds,
         )
     if args.command == "validate-sources":
         return _run_validate_sources(
