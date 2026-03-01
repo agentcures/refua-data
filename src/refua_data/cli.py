@@ -12,7 +12,9 @@ from .pipeline import DatasetManager
 
 def build_parser() -> argparse.ArgumentParser:
     """Build command-line parser."""
-    parser = argparse.ArgumentParser(prog="refua-data", description="Refua dataset tooling")
+    parser = argparse.ArgumentParser(
+        prog="refua-data", description="Refua dataset tooling"
+    )
     parser.add_argument(
         "--cache-root",
         type=Path,
@@ -45,7 +47,9 @@ def build_parser() -> argparse.ArgumentParser:
         "materialize", help="Fetch and materialize one dataset to parquet"
     )
     materialize_parser.add_argument("dataset_id", help="Dataset ID")
-    materialize_parser.add_argument("--force", action="store_true", help="Force reprocessing")
+    materialize_parser.add_argument(
+        "--force", action="store_true", help="Force reprocessing"
+    )
     materialize_parser.add_argument(
         "--refresh",
         action="store_true",
@@ -68,7 +72,9 @@ def build_parser() -> argparse.ArgumentParser:
         "materialize-all", help="Materialize all datasets (or by tag)"
     )
     mat_all_parser.add_argument("--tag", default=None, help="Filter datasets by tag")
-    mat_all_parser.add_argument("--force", action="store_true", help="Force reprocessing")
+    mat_all_parser.add_argument(
+        "--force", action="store_true", help="Force reprocessing"
+    )
     mat_all_parser.add_argument(
         "--refresh",
         action="store_true",

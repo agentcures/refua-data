@@ -35,7 +35,9 @@ def _conditional_headers(meta: dict[str, Any]) -> dict[str, str]:
     return headers
 
 
-def _with_dataset_metadata(meta: dict[str, Any], dataset: DatasetDefinition) -> dict[str, Any]:
+def _with_dataset_metadata(
+    meta: dict[str, Any], dataset: DatasetDefinition
+) -> dict[str, Any]:
     merged = dict(meta)
     merged["dataset"] = dataset.metadata_snapshot()
     return merged
@@ -76,7 +78,9 @@ def _ensure_sha256(
     return checksum
 
 
-def _default_source_url(dataset: DatasetDefinition, existing_meta: dict[str, Any]) -> str:
+def _default_source_url(
+    dataset: DatasetDefinition, existing_meta: dict[str, Any]
+) -> str:
     source_url = existing_meta.get("source_url")
     if isinstance(source_url, str) and source_url:
         return source_url
@@ -319,7 +323,9 @@ def _fetch_concat_urls(
     try:
         with tmp_path.open("wb") as merged:
             for index, url in enumerate(dataset.urls):
-                part_path = raw_path.with_suffix(f"{raw_path.suffix}.part-{index:04d}.tmp")
+                part_path = raw_path.with_suffix(
+                    f"{raw_path.suffix}.part-{index:04d}.tmp"
+                )
                 part_paths.append(part_path)
 
                 detail = _download_url_to_path(
@@ -477,7 +483,9 @@ def _fetch_http_url(
     if refresh and not force:
         headers.update(_conditional_headers(existing_meta))
 
-    with requests.get(url, stream=True, timeout=timeout_seconds, headers=headers) as response:
+    with requests.get(
+        url, stream=True, timeout=timeout_seconds, headers=headers
+    ) as response:
         if response.status_code == requests.codes.not_modified and raw_path.exists():
             checksum = _ensure_sha256(
                 raw_path,
@@ -563,7 +571,10 @@ def _fetch_api_dataset(
     request_signature = api.request_signature()
     if raw_path.exists() and not force and not refresh:
         existing_signature = existing_meta.get("api_request_signature")
-        if isinstance(existing_signature, dict) and existing_signature == request_signature:
+        if (
+            isinstance(existing_signature, dict)
+            and existing_signature == request_signature
+        ):
             checksum = _ensure_sha256(
                 raw_path,
                 existing_meta,
@@ -773,7 +784,7 @@ def _parse_next_link_header(link_header: str | None) -> str | None:
 
     for part in link_header.split(","):
         section = part.strip()
-        if "rel=\"next\"" not in section:
+        if 'rel="next"' not in section:
             continue
         if not section.startswith("<") or ">" not in section:
             continue

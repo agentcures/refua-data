@@ -17,26 +17,19 @@ class CacheBackend(Protocol):
 
     root: Path
 
-    def ensure(self) -> None:
-        ...
+    def ensure(self) -> None: ...
 
-    def raw_file(self, dataset: DatasetDefinition) -> Path:
-        ...
+    def raw_file(self, dataset: DatasetDefinition) -> Path: ...
 
-    def raw_meta(self, dataset: DatasetDefinition) -> Path:
-        ...
+    def raw_meta(self, dataset: DatasetDefinition) -> Path: ...
 
-    def parquet_dir(self, dataset: DatasetDefinition) -> Path:
-        ...
+    def parquet_dir(self, dataset: DatasetDefinition) -> Path: ...
 
-    def parquet_manifest(self, dataset: DatasetDefinition) -> Path:
-        ...
+    def parquet_manifest(self, dataset: DatasetDefinition) -> Path: ...
 
-    def read_json(self, path: Path) -> dict[str, Any] | None:
-        ...
+    def read_json(self, path: Path) -> dict[str, Any] | None: ...
 
-    def write_json(self, path: Path, payload: dict[str, Any]) -> None:
-        ...
+    def write_json(self, path: Path, payload: dict[str, Any]) -> None: ...
 
 
 class DataCache:
@@ -61,7 +54,9 @@ class DataCache:
     def raw_meta(self, dataset: DatasetDefinition) -> Path:
         """Return raw metadata path for a dataset."""
         filename = f"{dataset.preferred_filename()}.json"
-        return self.root.joinpath("_meta", "raw", dataset.dataset_id, dataset.version, filename)
+        return self.root.joinpath(
+            "_meta", "raw", dataset.dataset_id, dataset.version, filename
+        )
 
     def parquet_dir(self, dataset: DatasetDefinition) -> Path:
         """Return parquet output directory for a dataset."""
@@ -87,7 +82,9 @@ class DataCache:
         """Write JSON metadata atomically."""
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(path.suffix + ".tmp")
-        tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        tmp_path.write_text(
+            json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
+        )
         os.replace(tmp_path, path)
 
 

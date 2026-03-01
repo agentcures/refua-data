@@ -40,7 +40,9 @@ def iter_dataset_chunks(
     delimiter = infer_delimiter(dataset, raw_path)
     lower_name = raw_path.name.lower()
     if lower_name.endswith(".zip"):
-        yield from _iter_csv_like_from_zip(raw_path, delimiter=delimiter, chunksize=chunksize)
+        yield from _iter_csv_like_from_zip(
+            raw_path, delimiter=delimiter, chunksize=chunksize
+        )
         return
 
     compression: Literal["infer", "gzip"] | None = "infer"
@@ -61,7 +63,9 @@ def iter_dataset_chunks(
 
 
 def _iter_jsonl_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataFrame]:
-    reader = pd.read_json(raw_path, lines=True, compression="infer", chunksize=chunksize)
+    reader = pd.read_json(
+        raw_path, lines=True, compression="infer", chunksize=chunksize
+    )
     for chunk in reader:
         yield prepare_dataframe(chunk)
 
@@ -88,9 +92,7 @@ def _iter_csv_like_from_zip(
 
 def _choose_zip_member(archive: zipfile.ZipFile) -> str:
     preferred_suffixes = (".csv", ".tsv", ".txt", ".jsonl")
-    candidates = [
-        name for name in archive.namelist() if not name.endswith("/")
-    ]
+    candidates = [name for name in archive.namelist() if not name.endswith("/")]
     if not candidates:
         raise ValueError("Zip archive does not contain files.")
 

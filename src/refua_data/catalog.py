@@ -230,9 +230,7 @@ _DEFAULT_DATASETS = [
         homepage="https://moleculenet.org/datasets-1",
         license_name="Dataset-specific upstream terms",
         license_url="https://moleculenet.org/",
-        urls=(
-            "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/BBBP.csv",
-        ),
+        urls=("https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/BBBP.csv",),
         file_format="csv",
         category="admet",
         tags=("bbb", "classification", "admet"),
@@ -258,7 +256,9 @@ _DEFAULT_DATASETS = [
         homepage="https://moleculenet.org/datasets-1",
         license_name="Dataset-specific upstream terms",
         license_url="https://moleculenet.org/",
-        urls=("https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/clintox.csv.gz",),
+        urls=(
+            "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/clintox.csv.gz",
+        ),
         file_format="csv",
         category="toxicity",
         tags=("toxicity", "clinical", "admet"),
@@ -284,9 +284,7 @@ _DEFAULT_DATASETS = [
         homepage="https://moleculenet.org/datasets-1",
         license_name="Dataset-specific upstream terms",
         license_url="https://moleculenet.org/",
-        urls=(
-            "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/HIV.csv",
-        ),
+        urls=("https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/HIV.csv",),
         file_format="csv",
         category="target_activity",
         tags=("hiv", "classification", "bioactivity"),
@@ -312,7 +310,9 @@ _DEFAULT_DATASETS = [
         homepage="https://moleculenet.org/datasets-1",
         license_name="Dataset-specific upstream terms",
         license_url="https://moleculenet.org/",
-        urls=("https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/delaney-processed.csv",),
+        urls=(
+            "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/delaney-processed.csv",
+        ),
         file_format="csv",
         category="physchem",
         tags=("solubility", "regression", "admet"),
@@ -952,7 +952,7 @@ _DEFAULT_DATASETS = [
             params={
                 "query": (
                     "organism_id:9606 AND reviewed:true AND "
-                    "keyword:\"G-protein coupled receptor\""
+                    'keyword:"G-protein coupled receptor"'
                 ),
                 "format": "json",
             },
@@ -981,7 +981,7 @@ _DEFAULT_DATASETS = [
         api=ApiDatasetConfig(
             endpoint="https://rest.uniprot.org/uniprotkb/search",
             params={
-                "query": "organism_id:9606 AND reviewed:true AND keyword:\"Ion channel\"",
+                "query": 'organism_id:9606 AND reviewed:true AND keyword:"Ion channel"',
                 "format": "json",
             },
             pagination="link_header",

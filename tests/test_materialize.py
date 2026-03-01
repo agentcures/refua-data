@@ -43,7 +43,9 @@ def test_materialize_writes_parquet_and_manifest(tmp_path: Path) -> None:
     assert first.manifest_path.exists()
     manifest = manager.cache.read_json(first.manifest_path)
 
-    loaded = pd.concat([pd.read_parquet(part) for part in first.parts], ignore_index=True)
+    loaded = pd.concat(
+        [pd.read_parquet(part) for part in first.parts], ignore_index=True
+    )
     assert len(loaded) == 3
     assert set(loaded.columns) == {"smiles", "label"}
     assert isinstance(manifest, dict)

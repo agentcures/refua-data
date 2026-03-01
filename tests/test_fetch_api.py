@@ -66,7 +66,9 @@ class _ApiHandler(BaseHTTPRequestHandler):
 
         self._send_json(payload, link_header=link_header)
 
-    def _send_json(self, payload: dict[str, object], *, link_header: str | None = None) -> None:
+    def _send_json(
+        self, payload: dict[str, object], *, link_header: str | None = None
+    ) -> None:
         encoded = json.dumps(payload).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

@@ -27,7 +27,9 @@ def _build_manager(source_path: Path, cache_root: Path) -> DatasetManager:
     return DatasetManager(catalog=catalog, cache=cache)
 
 
-def _build_concat_manager(source_paths: tuple[Path, ...], cache_root: Path) -> DatasetManager:
+def _build_concat_manager(
+    source_paths: tuple[Path, ...], cache_root: Path
+) -> DatasetManager:
     dataset = DatasetDefinition(
         dataset_id="toy_concat",
         name="Toy Concat",

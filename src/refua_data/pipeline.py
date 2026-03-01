@@ -98,7 +98,9 @@ class DatasetManager:
         row_count = 0
 
         for index, chunk in enumerate(
-            iter_dataset_chunks(fetch_result.raw_path, dataset=dataset, chunksize=chunksize)
+            iter_dataset_chunks(
+                fetch_result.raw_path, dataset=dataset, chunksize=chunksize
+            )
         ):
             part_path = parquet_dir.joinpath(f"part-{index:05d}.parquet")
             chunk.to_parquet(part_path, index=False)
@@ -163,7 +165,9 @@ class DatasetManager:
             return None
 
         row_count_raw = manifest.get("row_count")
-        row_count = int(row_count_raw) if isinstance(row_count_raw, int | float | str) else 0
+        row_count = (
+            int(row_count_raw) if isinstance(row_count_raw, int | float | str) else 0
+        )
 
         return MaterializeResult(
             dataset_id=dataset.dataset_id,
@@ -184,7 +188,10 @@ class DatasetManager:
         refresh: bool = False,
     ) -> list[FetchResult]:
         """Fetch multiple datasets."""
-        return [self.fetch(dataset_id, force=force, refresh=refresh) for dataset_id in dataset_ids]
+        return [
+            self.fetch(dataset_id, force=force, refresh=refresh)
+            for dataset_id in dataset_ids
+        ]
 
     def materialize_many(
         self,

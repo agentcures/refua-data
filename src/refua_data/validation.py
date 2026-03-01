@@ -58,7 +58,8 @@ def validate_dataset_sources(
 
     if dataset.url_mode == "concat":
         concat_attempts = [
-            _probe_url(dataset, url, timeout_seconds=timeout_seconds) for url in dataset.urls
+            _probe_url(dataset, url, timeout_seconds=timeout_seconds)
+            for url in dataset.urls
         ]
         return [_collapse_concat_attempts(dataset, concat_attempts)]
 
