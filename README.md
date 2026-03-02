@@ -17,7 +17,7 @@
 
 ## Included datasets
 
-The default catalog includes local-file/HTTP datasets plus API presets useful in drug discovery, including **ZINC**, **ChEMBL**, and **UniProt**.
+The default catalog includes local-file/HTTP datasets plus API presets useful in drug discovery, including **ZINC**, **ChEMBL**, **UniProt**, **openFDA**, and the **Human Protein Atlas**.
 
 1. `zinc15_250k` (ZINC)
 2. `zinc15_tranche_druglike_instock` (ZINC tranche)
@@ -36,36 +36,38 @@ The default catalog includes local-file/HTTP datasets plus API presets useful in
 15. `freesolv`
 16. `lipophilicity`
 17. `pcba`
-18. `chembl_activity_ki_human`
-19. `chembl_activity_ic50_human`
-20. `chembl_activity_kd_human`
-21. `chembl_activity_ec50_human`
-22. `chembl_activity_ac50_human`
-23. `chembl_assays_binding_human`
-24. `chembl_assays_functional_human`
-25. `chembl_assays_adme_human`
-26. `chembl_targets_human_single_protein`
-27. `chembl_targets_human_protein_complex`
-28. `chembl_molecules_phase3plus`
-29. `chembl_molecules_phase4`
-30. `chembl_molecules_black_box_warning`
-31. `chembl_mechanism_phase2plus`
-32. `chembl_drug_indications_phase2plus`
-33. `chembl_drug_indications_phase3plus`
-34. `uniprot_human_reviewed`
-35. `uniprot_human_receptors`
-36. `uniprot_human_membrane`
-37. `uniprot_human_nucleus`
-38. `uniprot_human_kinases`
-39. `uniprot_human_gpcr`
-40. `uniprot_human_ion_channels`
-41. `uniprot_human_transporters`
-42. `uniprot_human_secreted`
-43. `uniprot_human_transcription_factors`
-44. `uniprot_human_enzymes`
+18. `openfda_drug_event_serious`
+19. `proteinatlas_human_proteome`
+20. `chembl_activity_ki_human`
+21. `chembl_activity_ic50_human`
+22. `chembl_activity_kd_human`
+23. `chembl_activity_ec50_human`
+24. `chembl_activity_ac50_human`
+25. `chembl_assays_binding_human`
+26. `chembl_assays_functional_human`
+27. `chembl_assays_adme_human`
+28. `chembl_targets_human_single_protein`
+29. `chembl_targets_human_protein_complex`
+30. `chembl_molecules_phase3plus`
+31. `chembl_molecules_phase4`
+32. `chembl_molecules_black_box_warning`
+33. `chembl_mechanism_phase2plus`
+34. `chembl_drug_indications_phase2plus`
+35. `chembl_drug_indications_phase3plus`
+36. `uniprot_human_reviewed`
+37. `uniprot_human_receptors`
+38. `uniprot_human_membrane`
+39. `uniprot_human_nucleus`
+40. `uniprot_human_kinases`
+41. `uniprot_human_gpcr`
+42. `uniprot_human_ion_channels`
+43. `uniprot_human_transporters`
+44. `uniprot_human_secreted`
+45. `uniprot_human_transcription_factors`
+46. `uniprot_human_enzymes`
 
 Most of these are distributed through MoleculeNet/DeepChem mirrors and retain upstream licensing terms.
-ChEMBL and UniProt presets are fetched through their public REST APIs and cached locally as JSONL.
+ChEMBL, UniProt, and openFDA presets are fetched through their public REST APIs and cached locally as JSONL.
 ZINC tranche presets aggregate multiple tranche files per dataset (drug-like MW B-K and logP A-K bins,
 reactivity A/B/C/E) into one cached tabular source during fetch.
 

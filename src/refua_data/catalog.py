@@ -360,6 +360,61 @@ _DEFAULT_DATASETS = [
         tags=("pcba", "hts", "multitask"),
     ),
     DatasetDefinition(
+        dataset_id="openfda_drug_event_serious",
+        name="openFDA Drug Event Serious Reports",
+        description=(
+            "Serious adverse event reports from openFDA/FAERS for "
+            "post-marketing safety surveillance and pharmacovigilance analyses."
+        ),
+        source="openFDA Drug Adverse Event API (FAERS)",
+        homepage="https://open.fda.gov/apis/drug/event/",
+        license_name="CC0 1.0 (openFDA)",
+        license_url="https://open.fda.gov/license/",
+        file_format="jsonl",
+        category="safety",
+        api=ApiDatasetConfig(
+            endpoint="https://api.fda.gov/drug/event.json",
+            params={"search": "serious:1"},
+            pagination="link_header",
+            items_path="results",
+            page_size_param="limit",
+            page_size=1000,
+            max_pages=30,
+            max_rows=30_000,
+        ),
+        tags=(
+            "api",
+            "openfda",
+            "faers",
+            "adverse_events",
+            "post_marketing",
+            "safety",
+        ),
+    ),
+    DatasetDefinition(
+        dataset_id="proteinatlas_human_proteome",
+        name="Human Protein Atlas Proteome Table",
+        description=(
+            "Gene/protein-centric atlas table with tissue expression, "
+            "subcellular localization, secretome, and disease-related "
+            "annotations for human target biology workflows."
+        ),
+        source="Human Protein Atlas downloadable data",
+        homepage="https://www.proteinatlas.org/about/download",
+        license_name="CC BY-SA 4.0 (Human Protein Atlas)",
+        license_url="https://www.proteinatlas.org/about/licence",
+        urls=("https://www.proteinatlas.org/download/proteinatlas.tsv.zip",),
+        file_format="tsv",
+        category="targets",
+        tags=(
+            "human",
+            "proteomics",
+            "expression",
+            "target_annotation",
+            "subcellular_localization",
+        ),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_activity_ki_human",
         name="ChEMBL Human Ki Activities",
         description=(
