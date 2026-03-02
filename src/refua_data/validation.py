@@ -12,7 +12,7 @@ import requests
 
 from .models import ApiDatasetConfig, DatasetDefinition
 
-_DEFAULT_USER_AGENT = "refua-data/0.6.0"
+_DEFAULT_USER_AGENT = "refua-data/0.7.0"
 
 
 @dataclass(frozen=True, slots=True)

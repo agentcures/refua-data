@@ -16,7 +16,7 @@ from .cache import CacheBackend, sha256_file
 from .models import ApiDatasetConfig, DatasetDefinition, FetchResult
 
 _DEFAULT_TIMEOUT = 120.0
-_DEFAULT_USER_AGENT = "refua-data/0.6.0"
+_DEFAULT_USER_AGENT = "refua-data/0.7.0"
 _CHUNK_SIZE = 4 * 1024 * 1024
 
 
