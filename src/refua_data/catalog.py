@@ -360,6 +360,31 @@ _DEFAULT_DATASETS = [
         tags=("pcba", "hts", "multitask"),
     ),
     DatasetDefinition(
+        dataset_id="bindingdb_articles_affinity",
+        name="BindingDB Article-Curated Affinity",
+        description=(
+            "BindingDB article-curated protein-ligand affinity measurements with "
+            "SMILES, target annotations, and assay values for SAR and "
+            "cross-target modeling."
+        ),
+        source="BindingDB downloadable TSV",
+        homepage="https://www.bindingdb.org/rwd/bind/chemsearch/marvin/Download.jsp",
+        license_name="CC BY 3.0 (BindingDB-curated data)",
+        license_url="https://creativecommons.org/licenses/by/3.0/",
+        urls=(
+            "https://www.bindingdb.org/rwd/bind/downloads/BindingDB_BindingDB_Articles_202604_tsv.zip",
+        ),
+        file_format="tsv",
+        category="target_activity",
+        compression="zip",
+        version="202604",
+        usage_notes=(
+            "Use for protein-ligand affinity modeling, literature-derived SAR "
+            "mining, and transfer learning across medicinal chemistry programs.",
+        ),
+        tags=("bindingdb", "affinity", "protein_ligand", "sar", "training"),
+    ),
+    DatasetDefinition(
         dataset_id="openfda_drug_event_serious",
         name="openFDA Drug Event Serious Reports",
         description=(
