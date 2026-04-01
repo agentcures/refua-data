@@ -154,6 +154,16 @@ def fetch_dataset(
                 timeout_seconds=timeout_seconds,
             )
 
+        if dataset.url_mode == "bundle":
+            return _fetch_bundle_urls(
+                dataset=dataset,
+                cache=cache,
+                raw_path=raw_path,
+                meta_path=meta_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+            )
+
         errors: list[str] = []
         for url in dataset.urls:
             try:
@@ -302,6 +312,13 @@ def _download_url_to_path(
     raise ValueError(f"Unsupported URL scheme for {url}")
 
 
+def _remove_path(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+        return
+    path.unlink(missing_ok=True)
+
+
 def _fetch_concat_urls(
     *,
     dataset: DatasetDefinition,
@@ -359,6 +376,74 @@ def _fetch_concat_urls(
         tmp_path.unlink(missing_ok=True)
         for part_path in part_paths:
             part_path.unlink(missing_ok=True)
+        raise
+
+    checksum = sha256_file(raw_path)
+    source_url = dataset.urls[0]
+    meta = {
+        "dataset_id": dataset.dataset_id,
+        "version": dataset.version,
+        "source_type": "multi_url",
+        "source_url": source_url,
+        "source_urls": list(dataset.urls),
+        "url_mode": dataset.url_mode,
+        "source_count": len(dataset.urls),
+        "fetched_at": _utcnow_iso(),
+        "refreshed": refresh,
+        "bytes_downloaded": bytes_downloaded,
+        "sources": source_details,
+        "sha256": checksum,
+    }
+    _write_raw_metadata(cache, meta_path, dataset=dataset, meta=meta)
+
+    return FetchResult(
+        dataset_id=dataset.dataset_id,
+        version=dataset.version,
+        raw_path=raw_path,
+        metadata_path=meta_path,
+        source_url=source_url,
+        cache_hit=False,
+        refreshed=refresh,
+        bytes_downloaded=bytes_downloaded,
+        sha256=checksum,
+    )
+
+
+def _fetch_bundle_urls(
+    *,
+    dataset: DatasetDefinition,
+    cache: CacheBackend,
+    raw_path: Path,
+    meta_path: Path,
+    refresh: bool,
+    timeout_seconds: float,
+) -> FetchResult:
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = raw_path.with_name(f"{raw_path.name}.tmp")
+    if tmp_path.exists():
+        _remove_path(tmp_path)
+    tmp_path.mkdir(parents=True, exist_ok=True)
+
+    bytes_downloaded = 0
+    source_details: list[dict[str, Any]] = []
+
+    try:
+        for index, url in enumerate(dataset.urls):
+            candidate_name = Path(urlparse(url).path).name
+            filename = candidate_name or f"part-{index:05d}"
+            detail = _download_url_to_path(
+                url=url,
+                dest_path=tmp_path / filename,
+                timeout_seconds=timeout_seconds,
+            )
+            source_details.append(detail)
+            bytes_downloaded += int(detail.get("bytes_downloaded", 0))
+
+        if raw_path.exists():
+            _remove_path(raw_path)
+        os.replace(tmp_path, raw_path)
+    except Exception:
+        _remove_path(tmp_path)
         raise
 
     checksum = sha256_file(raw_path)

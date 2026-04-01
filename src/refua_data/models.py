@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-TabularFormat = Literal["csv", "tsv", "jsonl"]
+TabularFormat = Literal["csv", "tsv", "jsonl", "parquet"]
 Compression = Literal["none", "gzip", "zip", "infer"]
 ApiPaginationMode = Literal["none", "chembl", "link_header"]
-UrlMode = Literal["fallback", "concat"]
+UrlMode = Literal["fallback", "concat", "bundle"]
 
 _CATEGORY_USAGE_DEFAULTS: dict[str, str] = {
     "compound_library": "Use for compound library curation, screening, and molecular pretraining.",
@@ -94,6 +94,7 @@ class DatasetDefinition:
             "csv": ".csv",
             "tsv": ".tsv",
             "jsonl": ".jsonl",
+            "parquet": ".parquet",
         }[self.file_format]
         return f"{self.dataset_id}{fallback_ext}"
 

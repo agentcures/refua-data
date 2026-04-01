@@ -127,6 +127,20 @@ def test_validate_sources_for_file_http_and_api(tmp_path: Path) -> None:
                 url_mode="concat",
             ),
             DatasetDefinition(
+                dataset_id="http_bundle",
+                name="HTTP Bundle",
+                description="http bundle",
+                source="unit",
+                homepage="https://example.test",
+                license_name="test",
+                license_url=None,
+                file_format="parquet",
+                category="test",
+                urls=(f"{base}/ok.csv", f"{base}/missing.csv"),
+                filename="http_bundle",
+                url_mode="bundle",
+            ),
+            DatasetDefinition(
                 dataset_id="api_ok",
                 name="API OK",
                 description="api ok",
@@ -173,6 +187,10 @@ def test_validate_sources_for_file_http_and_api(tmp_path: Path) -> None:
         assert by_id["http_concat"].ok is False
         assert by_id["http_concat"].details.get("failed_count") == 1
         assert by_id["http_concat"].details.get("url_mode") == "concat"
+
+        assert by_id["http_bundle"].ok is False
+        assert by_id["http_bundle"].details.get("failed_count") == 1
+        assert by_id["http_bundle"].details.get("url_mode") == "bundle"
 
         assert by_id["api_ok"].ok is True
         assert by_id["api_ok"].source_type == "api"

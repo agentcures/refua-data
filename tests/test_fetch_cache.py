@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from refua_data.cache import DataCache
@@ -43,6 +44,29 @@ def _build_concat_manager(
         category="test",
         tags=("unit",),
         url_mode="concat",
+    )
+    catalog = DatasetCatalog.from_entries([dataset])
+    cache = DataCache(cache_root)
+    return DatasetManager(catalog=catalog, cache=cache)
+
+
+def _build_bundle_manager(
+    source_paths: tuple[Path, ...], cache_root: Path
+) -> DatasetManager:
+    dataset = DatasetDefinition(
+        dataset_id="toy_bundle",
+        name="Toy Bundle",
+        description="Toy multi-source parquet bundle dataset",
+        source="unit-test",
+        homepage="https://example.test",
+        license_name="test",
+        license_url=None,
+        urls=tuple(path.resolve().as_uri() for path in source_paths),
+        file_format="parquet",
+        category="test",
+        tags=("unit",),
+        filename="toy_bundle",
+        url_mode="bundle",
     )
     catalog = DatasetCatalog.from_entries([dataset])
     cache = DataCache(cache_root)
@@ -110,3 +134,25 @@ def test_fetch_concat_mode_merges_multiple_sources_and_skips_duplicate_headers(
     merged_lines = fetched.raw_path.read_text(encoding="utf-8").strip().splitlines()
     assert fetched.cache_hit is False
     assert merged_lines == ["smiles,label", "CCO,1", "CCC,0"]
+
+
+def test_fetch_bundle_mode_downloads_multiple_parquet_parts(tmp_path: Path) -> None:
+    source_a = tmp_path / "part_a.parquet"
+    source_b = tmp_path / "part_b.parquet"
+    pd.DataFrame({"target": ["SRC"], "score": [0.8]}).to_parquet(source_a, index=False)
+    pd.DataFrame({"target": ["EGFR"], "score": [0.9]}).to_parquet(
+        source_b, index=False
+    )
+
+    manager = _build_bundle_manager((source_a, source_b), tmp_path / "cache")
+
+    first = manager.fetch("toy_bundle")
+    second = manager.fetch("toy_bundle")
+
+    assert first.cache_hit is False
+    assert second.cache_hit is True
+    assert first.raw_path.is_dir()
+    assert sorted(path.name for path in first.raw_path.glob("*.parquet")) == [
+        "part_a.parquet",
+        "part_b.parquet",
+    ]

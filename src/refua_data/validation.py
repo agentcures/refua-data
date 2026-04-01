@@ -38,7 +38,8 @@ def validate_dataset_sources(
 
     For datasets with multiple URLs in `fallback` mode, probes are attempted in
     order and the dataset is considered healthy once one source succeeds.
-    For datasets in `concat` mode, every configured source must be reachable.
+    For datasets in `concat` or `bundle` mode, every configured source must be
+    reachable.
     """
     if dataset.api is not None:
         return [_probe_api(dataset, dataset.api, timeout_seconds=timeout_seconds)]
@@ -56,7 +57,7 @@ def validate_dataset_sources(
             )
         ]
 
-    if dataset.url_mode == "concat":
+    if dataset.url_mode in {"concat", "bundle"}:
         concat_attempts = [
             _probe_url(dataset, url, timeout_seconds=timeout_seconds)
             for url in dataset.urls

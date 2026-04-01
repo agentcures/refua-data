@@ -33,6 +33,10 @@ def iter_dataset_chunks(
     chunksize: int,
 ) -> Iterator[pd.DataFrame]:
     """Yield DataFrame chunks from a dataset raw file."""
+    if dataset.file_format == "parquet":
+        yield from _iter_parquet_chunks(raw_path, chunksize=chunksize)
+        return
+
     if dataset.file_format == "jsonl":
         yield from _iter_jsonl_chunks(raw_path, chunksize=chunksize)
         return
@@ -68,6 +72,26 @@ def _iter_jsonl_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataFra
     )
     for chunk in reader:
         yield prepare_dataframe(chunk)
+
+
+def _iter_parquet_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataFrame]:
+    parquet_files: list[Path]
+    if raw_path.is_dir():
+        parquet_files = sorted(path for path in raw_path.glob("*.parquet"))
+    else:
+        parquet_files = [raw_path]
+
+    if not parquet_files:
+        raise ValueError(f"No parquet files found at '{raw_path}'.")
+
+    for parquet_file in parquet_files:
+        frame = pd.read_parquet(parquet_file)
+        if len(frame) <= chunksize:
+            yield prepare_dataframe(frame)
+            continue
+
+        for start in range(0, len(frame), chunksize):
+            yield prepare_dataframe(frame.iloc[start : start + chunksize])
 
 
 def _iter_csv_like_from_zip(

@@ -22,6 +22,7 @@ def test_default_catalog_contains_core_and_api_datasets() -> None:
     assert "openfda_drug_event_serious" in ids
     assert "bindingdb_articles_affinity" in ids
     assert "proteinatlas_human_proteome" in ids
+    assert "opentargets_target_prioritisation" in ids
     assert "uniprot_human_reviewed" in ids
     assert "uniprot_human_receptors" in ids
     assert "uniprot_human_membrane" in ids
@@ -30,4 +31,4 @@ def test_default_catalog_contains_core_and_api_datasets() -> None:
     assert "uniprot_human_transcription_factors" in ids
     assert "uniprot_human_enzymes" in ids
     assert "chembl_targets_human_protein_complex" in ids
-    assert len(datasets) >= 47
+    assert len(datasets) >= 48

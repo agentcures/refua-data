@@ -63,6 +63,20 @@ def _zinc_druglike_tranche_urls(
     )
 
 
+def _opentargets_parquet_part_urls(
+    *,
+    release: str,
+    dataset: str,
+    part_token: str,
+    part_count: int,
+) -> tuple[str, ...]:
+    base = f"https://ftp.ebi.ac.uk/pub/databases/opentargets/platform/{release}/output/{dataset}"
+    return tuple(
+        f"{base}/part-{index:05d}-{part_token}-c000.snappy.parquet"
+        for index in range(part_count)
+    )
+
+
 _DEFAULT_DATASETS = [
     DatasetDefinition(
         dataset_id="zinc15_250k",
@@ -437,6 +451,41 @@ _DEFAULT_DATASETS = [
             "expression",
             "target_annotation",
             "subcellular_localization",
+        ),
+    ),
+    DatasetDefinition(
+        dataset_id="opentargets_target_prioritisation",
+        name="Open Targets Target Prioritisation",
+        description=(
+            "Open Targets target prioritisation features spanning tractability, "
+            "safety, novelty, and evidence-linked attributes for therapeutic "
+            "target ranking."
+        ),
+        source="Open Targets Platform downloadable parquet",
+        homepage="https://platform-docs.opentargets.org/data-access/datasets",
+        license_name="CC0 1.0 (Open Targets Platform data)",
+        license_url="https://platform-docs.opentargets.org/licence",
+        urls=_opentargets_parquet_part_urls(
+            release="25.03",
+            dataset="target_prioritisation",
+            part_token="9647e5c1-fd87-47e0-8c5d-3b1429e19b9a",
+            part_count=16,
+        ),
+        file_format="parquet",
+        category="targets",
+        version="25.03",
+        filename="target_prioritisation",
+        url_mode="bundle",
+        usage_notes=(
+            "Use for target ranking, tractability-aware portfolio construction, "
+            "and feature generation for target prioritisation models.",
+        ),
+        tags=(
+            "opentargets",
+            "target_prioritisation",
+            "tractability",
+            "safety",
+            "target_ranking",
         ),
     ),
     DatasetDefinition(

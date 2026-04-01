@@ -92,7 +92,22 @@ _CHUNK_SIZE = 4 * 1024 * 1024
 
 
 def sha256_file(path: Path) -> str:
-    """Compute the SHA256 checksum of a file."""
+    """Compute the SHA256 checksum of a file or directory."""
+    if path.is_dir():
+        digest = hashlib.sha256()
+        for child in sorted(candidate for candidate in path.rglob("*") if candidate.is_file()):
+            relative = child.relative_to(path).as_posix().encode("utf-8")
+            digest.update(relative)
+            digest.update(b"\0")
+            with child.open("rb") as handle:
+                while True:
+                    chunk = handle.read(_CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    digest.update(chunk)
+            digest.update(b"\0")
+        return digest.hexdigest()
+
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         while True:
