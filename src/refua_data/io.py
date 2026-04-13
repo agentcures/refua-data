@@ -33,6 +33,10 @@ def iter_dataset_chunks(
     chunksize: int,
 ) -> Iterator[pd.DataFrame]:
     """Yield DataFrame chunks from a dataset raw file."""
+    if dataset.file_format == "xlsx":
+        yield from _iter_excel_chunks(raw_path, chunksize=chunksize)
+        return
+
     if dataset.file_format == "parquet":
         yield from _iter_parquet_chunks(raw_path, chunksize=chunksize)
         return
@@ -92,6 +96,16 @@ def _iter_parquet_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataF
 
         for start in range(0, len(frame), chunksize):
             yield prepare_dataframe(frame.iloc[start : start + chunksize])
+
+
+def _iter_excel_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataFrame]:
+    frame = pd.read_excel(raw_path)
+    if len(frame) <= chunksize:
+        yield prepare_dataframe(frame)
+        return
+
+    for start in range(0, len(frame), chunksize):
+        yield prepare_dataframe(frame.iloc[start : start + chunksize])
 
 
 def _iter_csv_like_from_zip(

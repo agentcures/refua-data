@@ -50,6 +50,25 @@ def _build_bundle_manager(
     return DatasetManager(catalog=catalog, cache=cache)
 
 
+def _build_excel_manager(source_path: Path, cache_root: Path) -> DatasetManager:
+    dataset = DatasetDefinition(
+        dataset_id="toy_excel",
+        name="Toy Excel",
+        description="Toy excel dataset",
+        source="unit-test",
+        homepage="https://example.test",
+        license_name="test",
+        license_url=None,
+        urls=(source_path.resolve().as_uri(),),
+        file_format="xlsx",
+        category="test",
+        tags=("unit",),
+    )
+    catalog = DatasetCatalog.from_entries([dataset])
+    cache = DataCache(cache_root)
+    return DatasetManager(catalog=catalog, cache=cache)
+
+
 def test_materialize_writes_parquet_and_manifest(tmp_path: Path) -> None:
     source = tmp_path / "source.csv"
     source.write_text("smiles,label\nCCO,1\nCCC,0\nCCN,1\n", encoding="utf-8")
@@ -96,3 +115,21 @@ def test_materialize_reads_parquet_bundle_sources(tmp_path: Path) -> None:
     assert result.row_count == 2
     assert len(result.parts) == 2
     assert set(loaded["target"]) == {"SRC", "EGFR"}
+
+
+def test_materialize_reads_excel_sources(tmp_path: Path) -> None:
+    source = tmp_path / "source.xlsx"
+    pd.DataFrame({"cell_line": ["A673", "PFSK-1"], "auc": [0.61, 0.93]}).to_excel(
+        source, index=False
+    )
+
+    manager = _build_excel_manager(source, tmp_path / "cache")
+
+    result = manager.materialize("toy_excel", chunksize=1)
+
+    loaded = pd.concat(
+        [pd.read_parquet(part) for part in result.parts], ignore_index=True
+    )
+    assert result.row_count == 2
+    assert len(result.parts) == 2
+    assert set(loaded["cell_line"]) == {"A673", "PFSK-1"}

@@ -10,6 +10,7 @@
 - API dataset ingestion for paginated JSON endpoints (for example ChEMBL and UniProt).
 - HTTP conditional refresh support (`ETag` / `Last-Modified`) when enabled.
 - Support for partitioned parquet bundle downloads (for example Open Targets releases).
+- Native Excel (`.xlsx`) ingestion for datasets such as GDSC fitted dose-response releases.
 - Incremental parquet materialization (chunked processing + partitioned parquet parts).
 - CLI for listing, fetching, and materializing datasets.
 - Query interface for filtered row access from materialized parquet datasets.
@@ -18,7 +19,7 @@
 
 ## Included datasets
 
-The default catalog includes local-file/HTTP datasets plus API presets useful in drug discovery, including **ZINC**, **BindingDB**, **Open Targets**, **ChEMBL**, **UniProt**, **openFDA**, and the **Human Protein Atlas**.
+The default catalog includes local-file/HTTP datasets plus API presets useful in drug discovery, including **ZINC**, **BindingDB**, **Open Targets**, **CancerRxGene/GDSC**, **ChEMBL**, **UniProt**, **openFDA**, and the **Human Protein Atlas**.
 
 1. `zinc15_250k` (ZINC)
 2. `zinc15_tranche_druglike_instock` (ZINC tranche)
@@ -41,37 +42,39 @@ The default catalog includes local-file/HTTP datasets plus API presets useful in
 19. `openfda_drug_event_serious`
 20. `proteinatlas_human_proteome`
 21. `opentargets_target_prioritisation`
-22. `chembl_activity_ki_human`
-23. `chembl_activity_ic50_human`
-24. `chembl_activity_kd_human`
-25. `chembl_activity_ec50_human`
-26. `chembl_activity_ac50_human`
-27. `chembl_assays_binding_human`
-28. `chembl_assays_functional_human`
-29. `chembl_assays_adme_human`
-30. `chembl_targets_human_single_protein`
-31. `chembl_targets_human_protein_complex`
-32. `chembl_molecules_phase3plus`
-33. `chembl_molecules_phase4`
-34. `chembl_molecules_black_box_warning`
-35. `chembl_mechanism_phase2plus`
-36. `chembl_drug_indications_phase2plus`
-37. `chembl_drug_indications_phase3plus`
-38. `uniprot_human_reviewed`
-39. `uniprot_human_receptors`
-40. `uniprot_human_membrane`
-41. `uniprot_human_nucleus`
-42. `uniprot_human_kinases`
-43. `uniprot_human_gpcr`
-44. `uniprot_human_ion_channels`
-45. `uniprot_human_transporters`
-46. `uniprot_human_secreted`
-47. `uniprot_human_transcription_factors`
-48. `uniprot_human_enzymes`
+22. `gdsc2_fitted_dose_response`
+23. `chembl_activity_ki_human`
+24. `chembl_activity_ic50_human`
+25. `chembl_activity_kd_human`
+26. `chembl_activity_ec50_human`
+27. `chembl_activity_ac50_human`
+28. `chembl_assays_binding_human`
+29. `chembl_assays_functional_human`
+30. `chembl_assays_adme_human`
+31. `chembl_targets_human_single_protein`
+32. `chembl_targets_human_protein_complex`
+33. `chembl_molecules_phase3plus`
+34. `chembl_molecules_phase4`
+35. `chembl_molecules_black_box_warning`
+36. `chembl_mechanism_phase2plus`
+37. `chembl_drug_indications_phase2plus`
+38. `chembl_drug_indications_phase3plus`
+39. `uniprot_human_reviewed`
+40. `uniprot_human_receptors`
+41. `uniprot_human_membrane`
+42. `uniprot_human_nucleus`
+43. `uniprot_human_kinases`
+44. `uniprot_human_gpcr`
+45. `uniprot_human_ion_channels`
+46. `uniprot_human_transporters`
+47. `uniprot_human_secreted`
+48. `uniprot_human_transcription_factors`
+49. `uniprot_human_enzymes`
 
 Most of these are distributed through MoleculeNet/DeepChem mirrors and retain upstream licensing terms.
 BindingDB is included as a versioned ZIP-backed TSV snapshot for literature-derived affinity modeling.
 Open Targets is included as a versioned parquet-part bundle for target prioritisation workflows.
+CancerRxGene GDSC is included as a versioned Excel-backed dose-response release for cell-line pharmacology modeling.
 ChEMBL, UniProt, and openFDA presets are fetched through their public REST APIs and cached locally as JSONL.
 ZINC tranche presets aggregate multiple tranche files per dataset (drug-like MW B-K and logP A-K bins,
 reactivity A/B/C/E) into one cached tabular source during fetch.

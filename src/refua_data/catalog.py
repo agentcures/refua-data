@@ -489,6 +489,36 @@ _DEFAULT_DATASETS = [
         ),
     ),
     DatasetDefinition(
+        dataset_id="gdsc2_fitted_dose_response",
+        name="GDSC2 Fitted Dose Response",
+        description=(
+            "CancerRxGene GDSC2 fitted dose-response measurements across cancer "
+            "cell lines for biomarker discovery, sensitivity modeling, and "
+            "translational pharmacology."
+        ),
+        source="CancerRxGene bulk download",
+        homepage="https://www.cancerrxgene.org/downloads/bulk_download",
+        license_name="CancerRxGene data terms",
+        license_url="https://www.cancerrxgene.org/legal",
+        urls=(
+            "https://cog.sanger.ac.uk/cancerrxgene/GDSC_release8.5/GDSC2_fitted_dose_response_27Oct23.xlsx",
+        ),
+        file_format="xlsx",
+        category="cell_response",
+        version="8.5-20231027",
+        usage_notes=(
+            "Use for cell-line drug sensitivity prediction, pharmacogenomic "
+            "biomarker discovery, and translational response modeling.",
+        ),
+        tags=(
+            "gdsc",
+            "cancerrxgene",
+            "dose_response",
+            "cell_lines",
+            "pharmacogenomics",
+        ),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_activity_ki_human",
         name="ChEMBL Human Ki Activities",
         description=(
