@@ -13,7 +13,7 @@ import requests
 
 from .models import ApiDatasetConfig, DatasetDefinition
 
-_DEFAULT_USER_AGENT = "refua-data/0.7.1"
+_DEFAULT_USER_AGENT = "refua-data/0.7.2"
 _MAX_VALIDATION_WORKERS = 8
 
 
