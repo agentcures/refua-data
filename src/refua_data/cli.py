@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .cache import DataCache
+from .io import iter_parquet_file_chunks
 from .pipeline import DatasetManager
 
 
@@ -387,6 +388,23 @@ def _apply_query_filters(frame: Any, filters: Mapping[str, Any]) -> Any:
     return filtered
 
 
+def _query_read_columns(
+    query_columns: list[str] | None,
+    query_filters: Mapping[str, Any],
+) -> list[str] | None:
+    if query_columns is None:
+        return None
+
+    columns = list(query_columns)
+    seen = set(columns)
+    for column in query_filters:
+        if column in seen:
+            continue
+        columns.append(column)
+        seen.add(column)
+    return columns
+
+
 def _run_query(
     manager: DatasetManager,
     *,
@@ -455,24 +473,32 @@ def _run_query(
                 "Re-materialize with force_materialize=true."
             )
 
-    import pandas as pd
-
     rows: list[dict[str, Any]] = []
     scanned_rows = 0
     scanned_parts = 0
+    read_columns = _query_read_columns(query_columns, query_filters)
     for part in parts:
-        frame = pd.read_parquet(part, columns=query_columns)
         scanned_parts += 1
-        scanned_rows += int(len(frame))
+        for frame in iter_parquet_file_chunks(
+            part,
+            chunksize=chunksize,
+            columns=read_columns,
+        ):
+            scanned_rows += int(len(frame))
+            filtered = _apply_query_filters(frame, query_filters)
+            if filtered.empty:
+                continue
 
-        filtered = _apply_query_filters(frame, query_filters)
-        if filtered.empty:
-            continue
-        if len(rows) >= limit:
-            break
-        remaining = int(limit) - len(rows)
-        batch = filtered.head(remaining)
-        rows.extend(batch.to_dict(orient="records"))
+            if query_columns is not None:
+                filtered = filtered.loc[:, query_columns]
+
+            if len(rows) >= limit:
+                break
+            remaining = int(limit) - len(rows)
+            batch = filtered.head(remaining)
+            rows.extend(batch.to_dict(orient="records"))
+            if len(rows) >= limit:
+                break
         if len(rows) >= limit:
             break
 

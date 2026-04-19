@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,10 +20,59 @@ from .models import ApiDatasetConfig, DatasetDefinition, FetchResult
 _DEFAULT_TIMEOUT = 120.0
 _DEFAULT_USER_AGENT = "refua-data/0.7.1"
 _CHUNK_SIZE = 4 * 1024 * 1024
+_MAX_DOWNLOAD_WORKERS = 8
 
 
 def _utcnow_iso() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _build_session() -> requests.Session:
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(
+        pool_connections=_MAX_DOWNLOAD_WORKERS,
+        pool_maxsize=_MAX_DOWNLOAD_WORKERS,
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def _download_worker_count(url_count: int) -> int:
+    return max(1, min(_MAX_DOWNLOAD_WORKERS, url_count))
+
+
+def _write_bytes_to_path(
+    *,
+    dest_path: Path,
+    chunks: Any,
+) -> tuple[int, str]:
+    digest = hashlib.sha256()
+    bytes_written = 0
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with dest_path.open("wb") as handle:
+            for chunk in chunks:
+                if not chunk:
+                    continue
+                handle.write(chunk)
+                digest.update(chunk)
+                bytes_written += len(chunk)
+    except Exception:
+        dest_path.unlink(missing_ok=True)
+        raise
+    return bytes_written, digest.hexdigest()
+
+
+def _copy_file_to_path(source_path: Path, dest_path: Path) -> tuple[int, str]:
+    source_path = source_path.expanduser().resolve()
+    with source_path.open("rb") as handle:
+        bytes_written, checksum = _write_bytes_to_path(
+            dest_path=dest_path,
+            chunks=iter(lambda: handle.read(_CHUNK_SIZE), b""),
+        )
+    shutil.copystat(source_path, dest_path)
+    return bytes_written, checksum
 
 
 def _conditional_headers(meta: dict[str, Any]) -> dict[str, str]:
@@ -127,64 +178,67 @@ def fetch_dataset(
         )
 
     try:
-        if dataset.api is not None:
-            return _fetch_api_dataset(
-                dataset=dataset,
-                cache=cache,
-                raw_path=raw_path,
-                meta_path=meta_path,
-                existing_meta=existing_meta,
-                force=force,
-                refresh=refresh,
-                timeout_seconds=timeout_seconds,
-            )
-
-        if not dataset.urls:
-            raise ValueError(
-                f"Dataset '{dataset.dataset_id}' has no configured URL sources."
-            )
-
-        if dataset.url_mode == "concat":
-            return _fetch_concat_urls(
-                dataset=dataset,
-                cache=cache,
-                raw_path=raw_path,
-                meta_path=meta_path,
-                refresh=refresh,
-                timeout_seconds=timeout_seconds,
-            )
-
-        if dataset.url_mode == "bundle":
-            return _fetch_bundle_urls(
-                dataset=dataset,
-                cache=cache,
-                raw_path=raw_path,
-                meta_path=meta_path,
-                refresh=refresh,
-                timeout_seconds=timeout_seconds,
-            )
-
-        errors: list[str] = []
-        for url in dataset.urls:
-            try:
-                return _fetch_from_url(
+        with _build_session() as session:
+            if dataset.api is not None:
+                return _fetch_api_dataset(
                     dataset=dataset,
                     cache=cache,
                     raw_path=raw_path,
                     meta_path=meta_path,
                     existing_meta=existing_meta,
-                    url=url,
                     force=force,
                     refresh=refresh,
                     timeout_seconds=timeout_seconds,
+                    session=session,
                 )
-            except Exception as exc:  # noqa: BLE001
-                errors.append(f"{url}: {exc}")
 
-        details = "\n".join(errors)
-        raise RuntimeError(
-            f"Failed to download dataset '{dataset.dataset_id}'.\n{details}"
-        )
+            if not dataset.urls:
+                raise ValueError(
+                    f"Dataset '{dataset.dataset_id}' has no configured URL sources."
+                )
+
+            if dataset.url_mode == "concat":
+                return _fetch_concat_urls(
+                    dataset=dataset,
+                    cache=cache,
+                    raw_path=raw_path,
+                    meta_path=meta_path,
+                    refresh=refresh,
+                    timeout_seconds=timeout_seconds,
+                )
+
+            if dataset.url_mode == "bundle":
+                return _fetch_bundle_urls(
+                    dataset=dataset,
+                    cache=cache,
+                    raw_path=raw_path,
+                    meta_path=meta_path,
+                    refresh=refresh,
+                    timeout_seconds=timeout_seconds,
+                )
+
+            errors: list[str] = []
+            for url in dataset.urls:
+                try:
+                    return _fetch_from_url(
+                        dataset=dataset,
+                        cache=cache,
+                        raw_path=raw_path,
+                        meta_path=meta_path,
+                        existing_meta=existing_meta,
+                        url=url,
+                        force=force,
+                        refresh=refresh,
+                        timeout_seconds=timeout_seconds,
+                        session=session,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{url}: {exc}")
+
+            details = "\n".join(errors)
+            raise RuntimeError(
+                f"Failed to download dataset '{dataset.dataset_id}'.\n{details}"
+            )
     except Exception as exc:
         if raw_path.exists() and not force and not refresh:
             checksum = _ensure_sha256(
@@ -221,6 +275,7 @@ def _fetch_from_url(
     force: bool,
     refresh: bool,
     timeout_seconds: float,
+    session: requests.Session,
 ) -> FetchResult:
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
@@ -248,6 +303,7 @@ def _fetch_from_url(
             force=force,
             refresh=refresh,
             timeout_seconds=timeout_seconds,
+            session=session,
         )
 
     raise ValueError(f"Unsupported URL scheme for {url}")
@@ -258,6 +314,7 @@ def _download_url_to_path(
     url: str,
     dest_path: Path,
     timeout_seconds: float,
+    session: requests.Session | None = None,
 ) -> dict[str, Any]:
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
@@ -267,9 +324,8 @@ def _download_url_to_path(
         source_path = Path(unquote(parsed.path)).expanduser().resolve()
         if not source_path.exists():
             raise FileNotFoundError(f"Local source path does not exist: {source_path}")
-        shutil.copy2(source_path, dest_path)
         source_stat = source_path.stat()
-        source_size = int(source_stat.st_size)
+        source_size, checksum = _copy_file_to_path(source_path, dest_path)
         return {
             "source_url": url,
             "source_type": "file",
@@ -277,25 +333,27 @@ def _download_url_to_path(
             "source_size": source_size,
             "source_mtime_ns": int(source_stat.st_mtime_ns),
             "bytes_downloaded": source_size,
+            "sha256": checksum,
         }
 
     if scheme in {"http", "https"}:
         headers = {"User-Agent": _DEFAULT_USER_AGENT}
+        active_session = session
+        owns_session = active_session is None
+        if active_session is None:
+            active_session = _build_session()
         try:
-            with requests.get(
+            with active_session.get(
                 url,
                 stream=True,
                 timeout=timeout_seconds,
                 headers=headers,
             ) as response:
                 response.raise_for_status()
-                bytes_downloaded = 0
-                with dest_path.open("wb") as handle:
-                    for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
-                        if not chunk:
-                            continue
-                        handle.write(chunk)
-                        bytes_downloaded += len(chunk)
+                bytes_downloaded, checksum = _write_bytes_to_path(
+                    dest_path=dest_path,
+                    chunks=response.iter_content(chunk_size=_CHUNK_SIZE),
+                )
                 return {
                     "source_url": url,
                     "source_type": "http",
@@ -304,10 +362,14 @@ def _download_url_to_path(
                     "last_modified": response.headers.get("Last-Modified"),
                     "content_length": response.headers.get("Content-Length"),
                     "bytes_downloaded": bytes_downloaded,
+                    "sha256": checksum,
                 }
         except Exception:
             dest_path.unlink(missing_ok=True)
             raise
+        finally:
+            if owns_session and active_session is not None:
+                active_session.close()
 
     raise ValueError(f"Unsupported URL scheme for {url}")
 
@@ -334,23 +396,45 @@ def _fetch_concat_urls(
 
     first_header: bytes | None = None
     dedupe_header = dataset.file_format in {"csv", "tsv"}
-    bytes_downloaded = 0
-    source_details: list[dict[str, Any]] = []
+    source_details: list[dict[str, Any]] = [{} for _ in dataset.urls]
 
     try:
-        with tmp_path.open("wb") as merged:
+        futures: dict[Future[dict[str, Any]], tuple[int, str, Path]] = {}
+        with ThreadPoolExecutor(
+            max_workers=_download_worker_count(len(dataset.urls))
+        ) as executor:
             for index, url in enumerate(dataset.urls):
                 part_path = raw_path.with_suffix(
                     f"{raw_path.suffix}.part-{index:04d}.tmp"
                 )
                 part_paths.append(part_path)
-
-                detail = _download_url_to_path(
+                future = executor.submit(
+                    _download_url_to_path,
                     url=url,
                     dest_path=part_path,
                     timeout_seconds=timeout_seconds,
+                    session=None,
                 )
-                source_details.append(detail)
+                futures[future] = (index, url, part_path)
+
+            errors: list[str] = []
+            for future, (index, url, _) in futures.items():
+                try:
+                    source_details[index] = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{url}: {exc}")
+
+            if errors:
+                details = "\n".join(errors)
+                raise RuntimeError(
+                    f"Failed to download dataset '{dataset.dataset_id}'.\n{details}"
+                )
+
+        bytes_downloaded = 0
+        digest = hashlib.sha256()
+        with tmp_path.open("wb") as merged:
+            for index, part_path in enumerate(part_paths):
+                detail = source_details[index]
                 bytes_downloaded += int(detail.get("bytes_downloaded", 0))
 
                 with part_path.open("rb") as source_handle:
@@ -360,16 +444,21 @@ def _fetch_concat_urls(
                             first_header = first_line
                             if first_line:
                                 merged.write(first_line)
-                        else:
-                            if first_header is None or first_line != first_header:
-                                if first_line:
-                                    merged.write(first_line)
-                        shutil.copyfileobj(source_handle, merged, length=_CHUNK_SIZE)
-                    else:
-                        shutil.copyfileobj(source_handle, merged, length=_CHUNK_SIZE)
+                                digest.update(first_line)
+                        elif first_header is None or first_line != first_header:
+                            if first_line:
+                                merged.write(first_line)
+                                digest.update(first_line)
+
+                    while True:
+                        chunk = source_handle.read(_CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        merged.write(chunk)
+                        digest.update(chunk)
 
                 part_path.unlink(missing_ok=True)
-                part_paths.pop()
+            part_paths.clear()
 
         os.replace(tmp_path, raw_path)
     except Exception:
@@ -378,7 +467,7 @@ def _fetch_concat_urls(
             part_path.unlink(missing_ok=True)
         raise
 
-    checksum = sha256_file(raw_path)
+    checksum = digest.hexdigest()
     source_url = dataset.urls[0]
     meta = {
         "dataset_id": dataset.dataset_id,
@@ -425,19 +514,40 @@ def _fetch_bundle_urls(
     tmp_path.mkdir(parents=True, exist_ok=True)
 
     bytes_downloaded = 0
-    source_details: list[dict[str, Any]] = []
+    source_details: list[dict[str, Any]] = [{} for _ in dataset.urls]
 
     try:
-        for index, url in enumerate(dataset.urls):
-            candidate_name = Path(urlparse(url).path).name
-            filename = candidate_name or f"part-{index:05d}"
-            detail = _download_url_to_path(
-                url=url,
-                dest_path=tmp_path / filename,
-                timeout_seconds=timeout_seconds,
-            )
-            source_details.append(detail)
-            bytes_downloaded += int(detail.get("bytes_downloaded", 0))
+        futures: dict[Future[dict[str, Any]], tuple[int, str]] = {}
+        with ThreadPoolExecutor(
+            max_workers=_download_worker_count(len(dataset.urls))
+        ) as executor:
+            for index, url in enumerate(dataset.urls):
+                candidate_name = Path(urlparse(url).path).name
+                filename = candidate_name or f"part-{index:05d}"
+                future = executor.submit(
+                    _download_url_to_path,
+                    url=url,
+                    dest_path=tmp_path / filename,
+                    timeout_seconds=timeout_seconds,
+                    session=None,
+                )
+                futures[future] = (index, url)
+
+            errors: list[str] = []
+            for future, (index, url) in futures.items():
+                try:
+                    detail = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{url}: {exc}")
+                    continue
+                source_details[index] = detail
+                bytes_downloaded += int(detail.get("bytes_downloaded", 0))
+
+            if errors:
+                details = "\n".join(errors)
+                raise RuntimeError(
+                    f"Failed to download dataset '{dataset.dataset_id}'.\n{details}"
+                )
 
         if raw_path.exists():
             _remove_path(raw_path)
@@ -522,10 +632,9 @@ def _fetch_file_url(
             )
 
     tmp_path = raw_path.with_suffix(raw_path.suffix + ".tmp")
-    shutil.copy2(source_path, tmp_path)
+    _, checksum = _copy_file_to_path(source_path, tmp_path)
     os.replace(tmp_path, raw_path)
 
-    checksum = sha256_file(raw_path)
     meta = {
         "dataset_id": dataset.dataset_id,
         "version": dataset.version,
@@ -563,12 +672,13 @@ def _fetch_http_url(
     force: bool,
     refresh: bool,
     timeout_seconds: float,
+    session: requests.Session,
 ) -> FetchResult:
     headers = {"User-Agent": _DEFAULT_USER_AGENT}
     if refresh and not force:
         headers.update(_conditional_headers(existing_meta))
 
-    with requests.get(
+    with session.get(
         url, stream=True, timeout=timeout_seconds, headers=headers
     ) as response:
         if response.status_code == requests.codes.not_modified and raw_path.exists():
@@ -599,17 +709,13 @@ def _fetch_http_url(
         raw_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = raw_path.with_suffix(raw_path.suffix + ".tmp")
 
-        bytes_downloaded = 0
-        with tmp_path.open("wb") as handle:
-            for chunk in response.iter_content(chunk_size=_CHUNK_SIZE):
-                if not chunk:
-                    continue
-                handle.write(chunk)
-                bytes_downloaded += len(chunk)
+        bytes_downloaded, checksum = _write_bytes_to_path(
+            dest_path=tmp_path,
+            chunks=response.iter_content(chunk_size=_CHUNK_SIZE),
+        )
 
         os.replace(tmp_path, raw_path)
 
-        checksum = sha256_file(raw_path)
         meta = {
             "dataset_id": dataset.dataset_id,
             "version": dataset.version,
@@ -648,6 +754,7 @@ def _fetch_api_dataset(
     force: bool,
     refresh: bool,
     timeout_seconds: float,
+    session: requests.Session,
 ) -> FetchResult:
     api = dataset.api
     if api is None:
@@ -696,15 +803,16 @@ def _fetch_api_dataset(
     rows_written = 0
     pages_fetched = 0
     bytes_downloaded = 0
+    digest = hashlib.sha256()
 
-    with tmp_path.open("w", encoding="utf-8") as handle:
+    with tmp_path.open("wb") as handle:
         next_params: dict[str, Any] | None = initial_params
         while True:
             headers = dict(base_headers)
             if pages_fetched == 0 and refresh and not force:
                 headers.update(_conditional_headers(existing_meta))
 
-            with requests.get(
+            with session.get(
                 page_url,
                 params=next_params,
                 timeout=timeout_seconds,
@@ -751,8 +859,9 @@ def _fetch_api_dataset(
                 for item in items:
                     if api.max_rows is not None and rows_written >= api.max_rows:
                         break
-                    handle.write(json.dumps(item, sort_keys=True))
-                    handle.write("\n")
+                    line = json.dumps(item, sort_keys=True).encode("utf-8") + b"\n"
+                    handle.write(line)
+                    digest.update(line)
                     rows_written += 1
 
                 pages_fetched += 1
@@ -776,7 +885,7 @@ def _fetch_api_dataset(
             next_params = None
 
     os.replace(tmp_path, raw_path)
-    checksum = sha256_file(raw_path)
+    checksum = digest.hexdigest()
     meta = {
         "dataset_id": dataset.dataset_id,
         "version": dataset.version,

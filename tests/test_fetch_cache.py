@@ -136,6 +136,21 @@ def test_fetch_concat_mode_merges_multiple_sources_and_skips_duplicate_headers(
     assert merged_lines == ["smiles,label", "CCO,1", "CCC,0"]
 
 
+def test_fetch_concat_mode_preserves_declared_source_order(tmp_path: Path) -> None:
+    source_a = tmp_path / "part_a.csv"
+    source_b = tmp_path / "part_b.csv"
+    source_c = tmp_path / "part_c.csv"
+    source_a.write_text("smiles,label\nA,1\n", encoding="utf-8")
+    source_b.write_text("smiles,label\nB,2\n", encoding="utf-8")
+    source_c.write_text("smiles,label\nC,3\n", encoding="utf-8")
+
+    manager = _build_concat_manager((source_b, source_c, source_a), tmp_path / "cache")
+    fetched = manager.fetch("toy_concat")
+
+    merged_lines = fetched.raw_path.read_text(encoding="utf-8").strip().splitlines()
+    assert merged_lines == ["smiles,label", "B,2", "C,3", "A,1"]
+
+
 def test_fetch_bundle_mode_downloads_multiple_parquet_parts(tmp_path: Path) -> None:
     source_a = tmp_path / "part_a.parquet"
     source_b = tmp_path / "part_b.parquet"

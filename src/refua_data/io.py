@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
+import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from .models import DatasetDefinition
 
@@ -89,13 +90,27 @@ def _iter_parquet_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataF
         raise ValueError(f"No parquet files found at '{raw_path}'.")
 
     for parquet_file in parquet_files:
-        frame = pd.read_parquet(parquet_file)
-        if len(frame) <= chunksize:
-            yield prepare_dataframe(frame)
-            continue
+        yield from iter_parquet_file_chunks(parquet_file, chunksize=chunksize)
 
-        for start in range(0, len(frame), chunksize):
-            yield prepare_dataframe(frame.iloc[start : start + chunksize])
+
+def iter_parquet_file_chunks(
+    parquet_file: Path,
+    *,
+    chunksize: int,
+    columns: list[str] | None = None,
+) -> Iterator[pd.DataFrame]:
+    """Yield parquet batches as DataFrames without loading the full file."""
+    saw_batch = False
+    parquet = pq.ParquetFile(parquet_file)
+    for batch in parquet.iter_batches(batch_size=chunksize, columns=columns):
+        saw_batch = True
+        yield prepare_dataframe(batch.to_pandas())
+
+    if saw_batch:
+        return
+
+    # Preserve empty-file behavior by emitting the empty schema once.
+    yield prepare_dataframe(pd.read_parquet(parquet_file, columns=columns))
 
 
 def _iter_excel_chunks(raw_path: Path, *, chunksize: int) -> Iterator[pd.DataFrame]:
@@ -145,8 +160,13 @@ def _choose_zip_member(archive: zipfile.ZipFile) -> str:
 
 def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize DataFrame dtypes for reliable parquet serialization."""
+    object_columns = [
+        column for column, dtype in df.dtypes.items() if pd.api.types.is_object_dtype(dtype)
+    ]
+    if not object_columns:
+        return df
+
     normalized = df.copy()
-    for column, dtype in normalized.dtypes.items():
-        if str(dtype) == "object":
-            normalized[column] = normalized[column].astype("string")
+    for column in object_columns:
+        normalized[column] = normalized[column].astype("string")
     return normalized

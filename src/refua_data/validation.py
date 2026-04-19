@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -13,6 +14,22 @@ import requests
 from .models import ApiDatasetConfig, DatasetDefinition
 
 _DEFAULT_USER_AGENT = "refua-data/0.7.1"
+_MAX_VALIDATION_WORKERS = 8
+
+
+def _build_session() -> requests.Session:
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(
+        pool_connections=_MAX_VALIDATION_WORKERS,
+        pool_maxsize=_MAX_VALIDATION_WORKERS,
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def _validation_worker_count(task_count: int) -> int:
+    return max(1, min(_MAX_VALIDATION_WORKERS, task_count))
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +50,7 @@ def validate_dataset_sources(
     dataset: DatasetDefinition,
     *,
     timeout_seconds: float,
+    session: requests.Session | None = None,
 ) -> list[SourceValidationResult]:
     """Validate configured sources for a dataset.
 
@@ -42,7 +60,14 @@ def validate_dataset_sources(
     reachable.
     """
     if dataset.api is not None:
-        return [_probe_api(dataset, dataset.api, timeout_seconds=timeout_seconds)]
+        return [
+            _probe_api(
+                dataset,
+                dataset.api,
+                timeout_seconds=timeout_seconds,
+                session=session,
+            )
+        ]
 
     if not dataset.urls:
         return [
@@ -58,15 +83,43 @@ def validate_dataset_sources(
         ]
 
     if dataset.url_mode in {"concat", "bundle"}:
-        concat_attempts = [
-            _probe_url(dataset, url, timeout_seconds=timeout_seconds)
-            for url in dataset.urls
+        concat_attempts: list[SourceValidationResult] = [
+            SourceValidationResult(
+                dataset_id=dataset.dataset_id,
+                source_type="unknown",
+                source="",
+                ok=False,
+                status_code=None,
+                latency_ms=0.0,
+                error="uninitialized",
+            )
+            for _ in dataset.urls
         ]
+        futures: dict[Future[SourceValidationResult], int] = {}
+        with ThreadPoolExecutor(
+            max_workers=_validation_worker_count(len(dataset.urls))
+        ) as executor:
+            for index, url in enumerate(dataset.urls):
+                future = executor.submit(
+                    _probe_url,
+                    dataset,
+                    url,
+                    timeout_seconds=timeout_seconds,
+                    session=None,
+                )
+                futures[future] = index
+            for future, index in futures.items():
+                concat_attempts[index] = future.result()
         return [_collapse_concat_attempts(dataset, concat_attempts)]
 
     attempts: list[SourceValidationResult] = []
     for url in dataset.urls:
-        result = _probe_url(dataset, url, timeout_seconds=timeout_seconds)
+        result = _probe_url(
+            dataset,
+            url,
+            timeout_seconds=timeout_seconds,
+            session=session,
+        )
         if result.ok:
             return [_with_fallback_failures(result, failures=attempts)]
         attempts.append(result)
@@ -176,6 +229,7 @@ def _probe_url(
     url: str,
     *,
     timeout_seconds: float,
+    session: requests.Session | None = None,
 ) -> SourceValidationResult:
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
@@ -183,7 +237,12 @@ def _probe_url(
     if scheme in {"", "file"}:
         return _probe_file_url(dataset, url)
     if scheme in {"http", "https"}:
-        return _probe_http_url(dataset, url, timeout_seconds=timeout_seconds)
+        return _probe_http_url(
+            dataset,
+            url,
+            timeout_seconds=timeout_seconds,
+            session=session,
+        )
 
     return SourceValidationResult(
         dataset_id=dataset.dataset_id,
@@ -225,6 +284,7 @@ def _probe_http_url(
     url: str,
     *,
     timeout_seconds: float,
+    session: requests.Session | None = None,
 ) -> SourceValidationResult:
     started = time.perf_counter()
     headers = {
@@ -232,8 +292,13 @@ def _probe_http_url(
         "Range": "bytes=0-0",
     }
 
+    active_session = session
+    owns_session = active_session is None
+    if active_session is None:
+        active_session = _build_session()
+
     try:
-        with requests.get(
+        with active_session.get(
             url,
             timeout=timeout_seconds,
             headers=headers,
@@ -266,6 +331,9 @@ def _probe_http_url(
             latency_ms=latency_ms,
             error=str(exc),
         )
+    finally:
+        if owns_session and active_session is not None:
+            active_session.close()
 
 
 def _probe_api(
@@ -273,6 +341,7 @@ def _probe_api(
     api: ApiDatasetConfig,
     *,
     timeout_seconds: float,
+    session: requests.Session | None = None,
 ) -> SourceValidationResult:
     started = time.perf_counter()
     params = dict(api.params)
@@ -284,8 +353,13 @@ def _probe_api(
 
     headers = {"User-Agent": _DEFAULT_USER_AGENT, **api.headers}
 
+    active_session = session
+    owns_session = active_session is None
+    if active_session is None:
+        active_session = _build_session()
+
     try:
-        response = requests.get(
+        response = active_session.get(
             api.endpoint,
             params=params,
             timeout=timeout_seconds,
@@ -325,6 +399,9 @@ def _probe_api(
                 "pagination": api.pagination,
             },
         )
+    finally:
+        if owns_session and active_session is not None:
+            active_session.close()
 
 
 def _extract_items(payload: Any, items_path: str) -> list[Any]:

@@ -123,3 +123,38 @@ def test_cli_query_rejects_invalid_filter_json(
     )
     with pytest.raises(ValueError, match="filters must be a valid JSON object"):
         main()
+
+
+def test_cli_query_filters_on_non_projected_column(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _write_materialized_fixture(tmp_path)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "refua-data",
+            "--cache-root",
+            str(tmp_path),
+            "query",
+            "tox21",
+            "--columns",
+            "smiles",
+            "--filters",
+            '{"split":{"eq":"valid"}}',
+            "--limit",
+            "10",
+            "--chunksize",
+            "1",
+            "--no-materialize-if-missing",
+        ],
+    )
+    rc = main()
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["returned_rows"] == 1
+    assert payload["rows"] == [{"smiles": "CCC"}]

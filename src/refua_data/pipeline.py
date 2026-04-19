@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from .models import DatasetDefinition, FetchResult, MaterializeResult
 from .validation import SourceValidationResult, validate_dataset_sources
 
 _DEFAULT_CHUNKSIZE = 100_000
+_MAX_VALIDATE_WORKERS = 8
 
 
 def _utcnow_iso() -> str:
@@ -230,11 +232,14 @@ class DatasetManager:
             datasets = self.list_datasets(tag=tag)
 
         results: list[SourceValidationResult] = []
-        for dataset in datasets:
-            results.extend(
-                validate_dataset_sources(
+        max_workers = max(1, min(_MAX_VALIDATE_WORKERS, len(datasets)))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for dataset_results in executor.map(
+                lambda dataset: validate_dataset_sources(
                     dataset,
                     timeout_seconds=timeout_seconds,
-                )
-            )
+                ),
+                datasets,
+            ):
+                results.extend(dataset_results)
         return results
