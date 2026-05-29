@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-import pyarrow.parquet as pq  # type: ignore[import-untyped]
+import pyarrow.parquet as pq
 
 from .models import DatasetDefinition
 
