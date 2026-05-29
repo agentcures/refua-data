@@ -15,7 +15,10 @@ UrlMode = Literal["fallback", "concat", "bundle"]
 _CATEGORY_USAGE_DEFAULTS: dict[str, str] = {
     "compound_library": "Use for compound library curation, screening, and molecular pretraining.",
     "target_activity": "Use for ligand-target activity modeling and potency benchmarking.",
-    "cell_response": "Use for cell-line drug response modeling, biomarker discovery, and translational sensitivity analyses.",
+    "cell_response": (
+        "Use for cell-line drug response modeling, biomarker discovery, and "
+        "translational sensitivity analyses."
+    ),
     "toxicity": "Use for toxicity risk prediction and safety classification tasks.",
     "admet": "Use for ADMET property prediction and developability screening.",
     "safety": "Use for pharmacovigilance and safety endpoint modeling.",
