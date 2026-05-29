@@ -36,7 +36,7 @@ def _write_materialized_fixture(cache_root: Path, *, dataset_id: str = "tox21") 
         {
             "dataset_id": dataset.dataset_id,
             "version": dataset.version,
-            "row_count": int(len(frame)),
+            "row_count": len(frame),
             "parts": [part_path.name],
             "source": {"sha256": "fixture"},
             "dataset": dataset.metadata_snapshot(),

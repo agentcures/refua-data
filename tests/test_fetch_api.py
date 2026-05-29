@@ -17,7 +17,7 @@ from refua_data.pipeline import DatasetManager
 class _ApiHandler(BaseHTTPRequestHandler):
     requests_seen: list[str] = []
 
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
         self.__class__.requests_seen.append(self.path)
@@ -78,7 +78,7 @@ class _ApiHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A003
+    def log_message(self, format: str, *args: object) -> None:
         return
 
 

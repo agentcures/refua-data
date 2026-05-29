@@ -155,9 +155,7 @@ def test_fetch_bundle_mode_downloads_multiple_parquet_parts(tmp_path: Path) -> N
     source_a = tmp_path / "part_a.parquet"
     source_b = tmp_path / "part_b.parquet"
     pd.DataFrame({"target": ["SRC"], "score": [0.8]}).to_parquet(source_a, index=False)
-    pd.DataFrame({"target": ["EGFR"], "score": [0.9]}).to_parquet(
-        source_b, index=False
-    )
+    pd.DataFrame({"target": ["EGFR"], "score": [0.9]}).to_parquet(source_b, index=False)
 
     manager = _build_bundle_manager((source_a, source_b), tmp_path / "cache")
 

@@ -191,19 +191,19 @@ def _run_list(manager: DatasetManager, *, tag: str | None, as_json: bool) -> int
             }
             for dataset in datasets
         ]
-        print(json.dumps(payload, indent=2))  # noqa: T201
+        print(json.dumps(payload, indent=2))
         return 0
 
-    print(f"Datasets ({len(datasets)}):")  # noqa: T201
+    print(f"Datasets ({len(datasets)}):")
     for dataset in datasets:
         tags = ", ".join(dataset.tags)
         source_type = "api" if dataset.api is not None else "file"
-        print(  # noqa: T201
+        print(
             f"- {dataset.dataset_id:<32} {source_type:<4} {dataset.category:<18} "
             f"{dataset.name} [{tags}]"
         )
-        print(f"  desc: {dataset.description}")  # noqa: T201
-        print(f"  use:  {dataset.resolved_usage_notes()[0]}")  # noqa: T201
+        print(f"  desc: {dataset.description}")
+        print(f"  use:  {dataset.resolved_usage_notes()[0]}")
     return 0
 
 
@@ -222,7 +222,7 @@ def _run_fetch(
         refresh=refresh,
         timeout_seconds=timeout_seconds,
     )
-    print(  # noqa: T201
+    print(
         json.dumps(
             {
                 "dataset_id": result.dataset_id,
@@ -259,7 +259,7 @@ def _run_materialize(
         chunksize=chunksize,
         timeout_seconds=timeout_seconds,
     )
-    print(  # noqa: T201
+    print(
         json.dumps(
             {
                 "dataset_id": result.dataset_id,
@@ -302,7 +302,7 @@ def _run_materialize_all(
         }
         for result in results
     ]
-    print(json.dumps(payload, indent=2))  # noqa: T201
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -484,7 +484,7 @@ def _run_query(
             chunksize=chunksize,
             columns=read_columns,
         ):
-            scanned_rows += int(len(frame))
+            scanned_rows += len(frame)
             filtered = _apply_query_filters(frame, query_filters)
             if filtered.empty:
                 continue
@@ -524,7 +524,7 @@ def _run_query(
         "cache_root": str(manager.cache.root),
         "manifest_path": manifest_path_text,
     }
-    print(json.dumps(payload, indent=2))  # noqa: T201
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -565,9 +565,9 @@ def _run_validate_sources(
                 for result in results
             ],
         }
-        print(json.dumps(payload, indent=2))  # noqa: T201
+        print(json.dumps(payload, indent=2))
     else:
-        print(  # noqa: T201
+        print(
             f"Source validation: checked={len(results)} ok={len(results) - len(failures)} "
             f"failed={len(failures)}"
         )
@@ -580,7 +580,7 @@ def _run_validate_sources(
             )
             if result.error:
                 line = f"{line} :: {result.error}"
-            print(line)  # noqa: T201
+            print(line)
 
     if fail_on_error and failures:
         return 1

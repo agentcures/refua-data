@@ -320,7 +320,7 @@ def _probe_http_url(
                     "content_length": response.headers.get("Content-Length"),
                 },
             )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         latency_ms = (time.perf_counter() - started) * 1000.0
         return SourceValidationResult(
             dataset_id=dataset.dataset_id,
@@ -384,7 +384,7 @@ def _probe_api(
                 "pagination": api.pagination,
             },
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         latency_ms = (time.perf_counter() - started) * 1000.0
         return SourceValidationResult(
             dataset_id=dataset.dataset_id,

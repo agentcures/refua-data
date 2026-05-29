@@ -232,7 +232,7 @@ def fetch_dataset(
                         timeout_seconds=timeout_seconds,
                         session=session,
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     errors.append(f"{url}: {exc}")
 
             details = "\n".join(errors)
@@ -421,7 +421,7 @@ def _fetch_concat_urls(
             for future, (index, url, _) in futures.items():
                 try:
                     source_details[index] = future.result()
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     errors.append(f"{url}: {exc}")
 
             if errors:
@@ -537,7 +537,7 @@ def _fetch_bundle_urls(
             for future, (index, url) in futures.items():
                 try:
                     detail = future.result()
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     errors.append(f"{url}: {exc}")
                     continue
                 source_details[index] = detail

@@ -14,7 +14,7 @@ from refua_data.pipeline import DatasetManager
 
 
 class _ValidationHandler(BaseHTTPRequestHandler):
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path.startswith("/ok.csv"):
             payload = b"smiles,label\nCCO,1\n"
             self.send_response(200)
@@ -41,7 +41,7 @@ class _ValidationHandler(BaseHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
 
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A003
+    def log_message(self, format: str, *args: object) -> None:
         return
 
 

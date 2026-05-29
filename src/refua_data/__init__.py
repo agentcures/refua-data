@@ -51,11 +51,11 @@ __all__ = [
     "FetchResult",
     "MaterializeResult",
     "SourceValidationResult",
+    "__version__",
     "build_data_provenance_record",
+    "get_default_catalog",
     "load_materialized_manifest",
     "summarize_materialized_dataset",
-    "__version__",
-    "get_default_catalog",
 ]
 
 

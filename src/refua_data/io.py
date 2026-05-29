@@ -161,7 +161,9 @@ def _choose_zip_member(archive: zipfile.ZipFile) -> str:
 def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize DataFrame dtypes for reliable parquet serialization."""
     object_columns = [
-        column for column, dtype in df.dtypes.items() if pd.api.types.is_object_dtype(dtype)
+        column
+        for column, dtype in df.dtypes.items()
+        if pd.api.types.is_object_dtype(dtype)
     ]
     if not object_columns:
         return df

@@ -107,7 +107,7 @@ class DatasetManager:
             part_path = parquet_dir.joinpath(f"part-{index:05d}.parquet")
             chunk.to_parquet(part_path, index=False)
             parts.append(part_path)
-            row_count += int(len(chunk))
+            row_count += len(chunk)
 
         if not parts:
             raise ValueError(

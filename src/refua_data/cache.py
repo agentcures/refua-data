@@ -95,7 +95,9 @@ def sha256_file(path: Path) -> str:
     """Compute the SHA256 checksum of a file or directory."""
     if path.is_dir():
         digest = hashlib.sha256()
-        for child in sorted(candidate for candidate in path.rglob("*") if candidate.is_file()):
+        for child in sorted(
+            candidate for candidate in path.rglob("*") if candidate.is_file()
+        ):
             relative = child.relative_to(path).as_posix().encode("utf-8")
             digest.update(relative)
             digest.update(b"\0")
