@@ -24,6 +24,7 @@ def test_default_catalog_contains_core_and_api_datasets() -> None:
     assert "proteinatlas_human_proteome" in ids
     assert "opentargets_target_prioritisation" in ids
     assert "gdsc2_fitted_dose_response" in ids
+    assert "depmap_prism_repurposing_secondary" in ids
     assert "uniprot_human_reviewed" in ids
     assert "uniprot_human_receptors" in ids
     assert "uniprot_human_membrane" in ids
@@ -32,4 +33,10 @@ def test_default_catalog_contains_core_and_api_datasets() -> None:
     assert "uniprot_human_transcription_factors" in ids
     assert "uniprot_human_enzymes" in ids
     assert "chembl_targets_human_protein_complex" in ids
-    assert len(datasets) >= 49
+    depmap = catalog.get("depmap_prism_repurposing_secondary")
+    assert depmap.category == "cell_response"
+    assert depmap.file_format == "csv"
+    assert depmap.urls == ("https://ndownloader.figshare.com/files/20237739",)
+    assert "depmap" in depmap.tags
+
+    assert len(datasets) >= 50

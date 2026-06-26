@@ -519,6 +519,38 @@ _DEFAULT_DATASETS = [
         ),
     ),
     DatasetDefinition(
+        dataset_id="depmap_prism_repurposing_secondary",
+        name="DepMap PRISM Repurposing Secondary Screen",
+        description=(
+            "PRISM Repurposing secondary screen dose-response viability profiles "
+            "across cancer cell lines and compound perturbations."
+        ),
+        source="DepMap PRISM Repurposing downloadable Figshare file",
+        homepage="https://depmap.org/repurposing/",
+        license_name="DepMap data terms / file-specific terms",
+        license_url="https://depmap.org/portal/terms/",
+        urls=("https://ndownloader.figshare.com/files/20237739",),
+        file_format="csv",
+        category="cell_response",
+        version="2020-03-24",
+        filename="prism_repurposing_secondary.csv",
+        usage_notes=(
+            "Use for compound-cell-line viability response modeling, cancer "
+            "context sensitivity prediction, and translational repurposing "
+            "analyses. Confirm file-specific DepMap usage terms before "
+            "redistributing raw or row-level derived data.",
+        ),
+        tags=(
+            "depmap",
+            "prism",
+            "repurposing",
+            "dose_response",
+            "cell_lines",
+            "viability",
+            "cell_response",
+        ),
+    ),
+    DatasetDefinition(
         dataset_id="chembl_activity_ki_human",
         name="ChEMBL Human Ki Activities",
         description=(
